@@ -1,6 +1,7 @@
 ---
 title: "SWB model parameters calibration analysis"
 author: "SwissDataApps"
+output-file: index.html
 format:
   html:
     code-fold: true
