@@ -109,7 +109,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#ground-truth-data" id="toc-ground-truth-data" class="nav-link" data-scroll-target="#ground-truth-data">Ground Truth Data</a></li>
   <li><a href="#soil-water-balance-model-runs" id="toc-soil-water-balance-model-runs" class="nav-link" data-scroll-target="#soil-water-balance-model-runs">Soil Water Balance Model Runs</a></li>
   <li><a href="#problem-statement" id="toc-problem-statement" class="nav-link" data-scroll-target="#problem-statement">Problem Statement</a></li>
-  <li><a href="#use-of-volumetric-ground-truth-data" id="toc-use-of-volumetric-ground-truth-data" class="nav-link" data-scroll-target="#use-of-volumetric-ground-truth-data">Use of volumetric ground truth data</a></li>
+  <li><a href="#use-of-volumetric-ground-truth-data" id="toc-use-of-volumetric-ground-truth-data" class="nav-link" data-scroll-target="#use-of-volumetric-ground-truth-data">Use of volumetric ground truth data</a>
+  <ul class="collapse">
+  <li><a href="#parameters-optimization-using-genetic-algorithm" id="toc-parameters-optimization-using-genetic-algorithm" class="nav-link" data-scroll-target="#parameters-optimization-using-genetic-algorithm">Parameters optimization using Genetic Algorithm</a></li>
+  <li><a href="#optimization-results-analysis" id="toc-optimization-results-analysis" class="nav-link" data-scroll-target="#optimization-results-analysis">Optimization results analysis</a></li>
+  </ul></li>
+  <li><a href="#location-based-analysis" id="toc-location-based-analysis" class="nav-link" data-scroll-target="#location-based-analysis">Location based analysis</a></li>
   </ul>
 </nav>
 </div>
@@ -496,6 +501,8 @@ Projected CRS: CH1903+ / LV95</code></pre>
 <span id="cb10-58"><a href="#cb10-58" aria-hidden="true" tabindex="-1"></a><span class="co"># soil_params_grid %&gt;% write_rds(here("data", "swb_calibration", "soil_params_grid.rds"))</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
+<section id="parameters-optimization-using-genetic-algorithm" class="level3">
+<h3 class="anchored" data-anchor-id="parameters-optimization-using-genetic-algorithm">Parameters optimization using Genetic Algorithm</h3>
 <p>To calibrate the SWB model soil parameters per location we will use a global optimization algorithm, more precisely Genetic Algorithm (GA).</p>
 <p>GA will be performed by location on an iterative process, as it is expected that optimal soil parameters vary among location depending on soil properties.</p>
 <p>After an initial attempt using the daily time series unprocessed it was clear that noise in the daily resolution would affect the error and consequently the parameter optimizing. For that reason both measured and modeled daily time series were smoothed using a 5 days moving average.</p>
@@ -596,6 +603,9 @@ Projected CRS: CH1903+ / LV95</code></pre>
 <span id="cb11-92"><a href="#cb11-92" aria-hidden="true" tabindex="-1"></a><span class="co"># optimized_params_df %&gt;% write_rds(here("data", "swb_calibration", "vol_df_ga_swb_calibration_v2.rds"))</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
+</section>
+<section id="optimization-results-analysis" class="level3">
+<h3 class="anchored" data-anchor-id="optimization-results-analysis">Optimization results analysis</h3>
 <p>We have now obtained the optimal set of parameters for each location.</p>
 <p>Now, we will run the SWB model using these and compare the SWB output with the soil moisture measurements.</p>
 <p>Although the number of locations is fairly low, 11, we will explore the distribution of the optimal parameters, and we will compare them with soil and topography metadata by location, looking for relations and insights in this sense.</p>
@@ -742,8 +752,9 @@ Projected CRS: CH1903+ / LV95</code></pre>
 <p>Calculating R-Squared per location confirms what we’ve seen in the last chart, only 4 out of 11 locations have an r squared over 0.3, which is still a low value.</p>
 <p>This raises one question and one challenge.</p>
 <p>A question, why can we have some minor fit only in one third of the locations with volumetric soil moisture data?</p>
-<p>We can think of 5 factors that could be affecting the fitness of the model: a. modeled rainfall input data, b. modeled evapotranspiration input data, c. the SWB model itself, d. the genetic algorithm used to fit the SWB soil parameters, e. quality of ground truth data.</p>
-<p>To answer the question I believe we can discard a and b, since the precision of these modeled variables should be somewhat similar for the different locations. We could expect a much lower precision in the modeled rainfall in mountain regions, but these 11 locations belong all to the same region, and in the following map we can even see that in the valley there are locations with higher and lower R-Squared.</p>
+<p>We can think of 5 factors that could be affecting the fitness of the model: a. modeled rainfall input data, b. modeled evapotranspiration input data, c.&nbsp;the SWB model itself, d.&nbsp;the genetic algorithm used to fit the SWB soil parameters, e. quality of ground truth data.</p>
+<p>To answer the question I believe we can discard a, since the precision of these modeled variables should be somewhat similar for the different locations. We could expect a much lower precision in the modeled rainfall in mountain regions, but these 11 locations belong all to the same region, and in the following map we can even see that in the valley there are locations with higher and lower R-Squared.</p>
+<p>For b, however, we could be having untrusty ETP values for some location if the vegetation cover is not a meadow, which is what we are using as a default in the ETP model.</p>
 <p>The model algorithm applied is the same for all locations, but it could be that it behaves better for certain soil types, vegetation covers or topology.</p>
 <p>For what can be seen in the time series comparison chart, some of the main parameters (field capacity and wilting point) appear to be wrong in some locations. This could be improved, but those locations even with a properly set parameters would probably still have no fit, as the two time series are no similar at all.</p>
 <p>Regarding the last factor, quality of ground truth data, if we look at the time series chart of those locations with no fits, some of them exhibit unexpected patterns in the readings.</p>
@@ -760,24 +771,32 @@ Projected CRS: CH1903+ / LV95</code></pre>
 <span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_basemap</span>(<span class="st">"Esri.WorldImagery"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
-<div class="leaflet html-widget html-fill-item" id="htmlwidget-5c155945841a16648cc4" style="width:100%;height:464px;"></div>
-<script type="application/json" data-for="htmlwidget-5c155945841a16648cc4">{"x":{"options":{"crs":{"crsClass":"L.CRS.EPSG3857","code":null,"proj4def":null,"projectedBounds":null,"options":{}}},"calls":[{"method":"createMapPane","args":["tmap401",401]},{"method":"addProviderTiles","args":["Esri.WorldImagery",null,"Esri.WorldImagery",{"minZoom":0,"maxZoom":18,"tileSize":256,"subdomains":"abc","errorTileUrl":"","tms":false,"noWrap":false,"zoomOffset":0,"zoomReverse":false,"opacity":1,"zIndex":1,"detectRetina":false,"pane":"tilePane"}]},{"method":"addCircles","args":[[47.12533,47.20641,47.41036,47.343693,47.198006,47.464157,47.476646,47.27904,47.314053,47.38666,47.43342],[7.463274,7.489932,7.556452,7.9579144,7.641028,7.647673,7.507898,7.739681,7.6257677,7.9689674,7.7912135],[651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521],["X1","X6","X11","X19","X21","X32","X33","X34","X41","X60","X67"],"locations_rsq",{"interactive":true,"className":"","pane":"tmap401","stroke":true,"color":"#666666","weight":1,"opacity":0.5,"fill":true,"fillColor":["#21908C","#5DC863","#21908C","#3B528B","#3B528B","#440154","#5DC863","#FDE725","#5DC863","#3B528B","#21908C"],"fillOpacity":[1,1,1,1,1,1,1,1,1,1,1]},["<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>1<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.255<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>6<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.375<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>11<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.256<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>19<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.188<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>21<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.185<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>32<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.077<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>33<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.324<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>34<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.455<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>41<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.370<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>60<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.150<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>67<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.235<\/nobr><\/td><\/tr><\/table><\/div>"],null,["1","6","11","19","21","32","33","34","41","60","67"],{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null,null]},{"method":"addLegend","args":[{"colors":["#440154","#3B528B","#21908C","#5DC863","#FDE725"],"labels":["0.0 to 0.1","0.1 to 0.2","0.2 to 0.3","0.3 to 0.4","0.4 to 0.5"],"na_color":null,"na_label":"NA","opacity":1,"position":"topright","type":"unknown","title":"rsq","extra":null,"layerId":"legend401","className":"info legend locations_rsq","group":"locations_rsq"}]},{"method":"addLayersControl","args":[[],"locations_rsq",{"collapsed":true,"autoZIndex":true,"position":"topleft"}]}],"limits":{"lat":[47.12533,47.476646],"lng":[7.463274,7.9689674]},"fitBounds":[47.12533,7.463274,47.476646,7.9689674,[]]},"evals":[],"jsHooks":[]}</script>
+<div class="leaflet html-widget html-fill-item" id="htmlwidget-e730bca46b2d31fda07f" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-e730bca46b2d31fda07f">{"x":{"options":{"crs":{"crsClass":"L.CRS.EPSG3857","code":null,"proj4def":null,"projectedBounds":null,"options":{}}},"calls":[{"method":"createMapPane","args":["tmap401",401]},{"method":"addProviderTiles","args":["Esri.WorldImagery",null,"Esri.WorldImagery",{"minZoom":0,"maxZoom":18,"tileSize":256,"subdomains":"abc","errorTileUrl":"","tms":false,"noWrap":false,"zoomOffset":0,"zoomReverse":false,"opacity":1,"zIndex":1,"detectRetina":false,"pane":"tilePane"}]},{"method":"addCircles","args":[[47.12533,47.20641,47.41036,47.343693,47.198006,47.464157,47.476646,47.27904,47.314053,47.38666,47.43342],[7.463274,7.489932,7.556452,7.9579144,7.641028,7.647673,7.507898,7.739681,7.6257677,7.9689674,7.7912135],[651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521],["X1","X6","X11","X19","X21","X32","X33","X34","X41","X60","X67"],"locations_rsq",{"interactive":true,"className":"","pane":"tmap401","stroke":true,"color":"#666666","weight":1,"opacity":0.5,"fill":true,"fillColor":["#21908C","#5DC863","#21908C","#3B528B","#3B528B","#440154","#5DC863","#FDE725","#5DC863","#3B528B","#21908C"],"fillOpacity":[1,1,1,1,1,1,1,1,1,1,1]},["<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>1<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.255<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>6<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.375<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>11<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.256<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>19<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.188<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>21<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.185<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>32<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.077<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>33<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.324<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>34<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.455<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>41<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.370<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>60<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.150<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>67<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.235<\/nobr><\/td><\/tr><\/table><\/div>"],null,["1","6","11","19","21","32","33","34","41","60","67"],{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null,null]},{"method":"addLegend","args":[{"colors":["#440154","#3B528B","#21908C","#5DC863","#FDE725"],"labels":["0.0 to 0.1","0.1 to 0.2","0.2 to 0.3","0.3 to 0.4","0.4 to 0.5"],"na_color":null,"na_label":"NA","opacity":1,"position":"topright","type":"unknown","title":"rsq","extra":null,"layerId":"legend401","className":"info legend locations_rsq","group":"locations_rsq"}]},{"method":"addLayersControl","args":[[],"locations_rsq",{"collapsed":true,"autoZIndex":true,"position":"topleft"}]}],"limits":{"lat":[47.12533,47.476646],"lng":[7.463274,7.9689674]},"fitBounds":[47.12533,7.463274,47.476646,7.9689674,[]]},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
-<p>In the following section we are going to explore if there is any relation between the optimized soil parameters chosen with some of the locations’ metadata.</p>
+</section>
+</section>
+<section id="location-based-analysis" class="level2">
+<h2 class="anchored" data-anchor-id="location-based-analysis">Location based analysis</h2>
+<p>In the following section we are going to explore if there is any relation between the fitness of the model and the proper optimized soil parameters chosen with some of the locations’ metadata.</p>
 <p>The idea behind this is gather some insights and later on be able to model the SWB soil parameters using location metadata as input, such as soil texture, soil depth, terrain slope, etc.</p>
-<p>Unfortunately, we have a very low amount of locations which is even worsened by having to discard stations with very low fit.</p>
+<p>Unfortunately, we have a very low amount of locations to perform a robust analysis.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Show Code</summary>
 <div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>locs_params <span class="ot">&lt;-</span> optimized_params_df <span class="sc">%&gt;%</span> </span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(locations_int_fixed, <span class="at">by =</span> <span class="st">"loc_id"</span>)</span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>locs_params <span class="sc">%&gt;%</span> </span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(</span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>  ))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(locations_int_fixed, <span class="at">by =</span> <span class="st">"loc_id"</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(locations_rsq <span class="sc">%&gt;%</span> <span class="fu">select</span>(loc_id, rsq), <span class="at">by =</span> <span class="st">"loc_id"</span>)</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>locs_params <span class="sc">%&gt;%</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">use =</span> <span class="fu">reorder</span>(<span class="fu">factor</span>(<span class="fu">ifelse</span>(<span class="fu">str_detect</span>(use, <span class="st">"Wiese"</span>), <span class="st">"Wiese"</span>, use)), <span class="fu">desc</span>(rsq))) <span class="sc">%&gt;%</span> </span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(use, rsq)) <span class="sc">+</span> </span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>() <span class="sc">+</span> </span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Model fit by use of land"</span>,</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"R-Squared"</span>,</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Use"</span>) <span class="sc">+</span></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -786,7 +805,176 @@ Projected CRS: CH1903+ / LV95</code></pre>
 </figure>
 </div>
 </div>
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>locs_params <span class="sc">%&gt;%</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">soil_type =</span> <span class="fu">reorder</span>(<span class="fu">factor</span>(soil_type), <span class="fu">desc</span>(rsq))) <span class="sc">%&gt;%</span> </span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(soil_type, rsq)) <span class="sc">+</span> </span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>() <span class="sc">+</span> </span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Model fit by soil type"</span>,</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"R-Squared"</span>,</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Soil type"</span>) <span class="sc">+</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hydromontania_swb_calib_files/figure-html/unnamed-chunk-11-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
 </div>
+</div>
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>locs_params <span class="sc">%&gt;%</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">topography =</span> <span class="fu">reorder</span>(<span class="fu">factor</span>(topography), <span class="fu">desc</span>(rsq))) <span class="sc">%&gt;%</span> </span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(topography, rsq)) <span class="sc">+</span> </span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>() <span class="sc">+</span> </span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Model fit by topography type"</span>,</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"R-Squared"</span>,</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Topography type"</span>) <span class="sc">+</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hydromontania_swb_calib_files/figure-html/unnamed-chunk-11-3.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>It is quite clear that some categories for the variables explored have a poor fit. This makes sense in the case of forest (Wald) for instance. Evapotranspiration used in the SWB model is also modeled for a meadow, and this variable is expected to be much higher for the same conditions in a forest. A wrong ETP will in place result in a wrong estimate in the SWB model.</p>
+<p>We should perform the same analysis for the rest of variables to identify other causes of error.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Add slope as a covariable.</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(terra)</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>dem <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">here</span>(<span class="st">"~/OpenDA/SwissShinyApp/hydromontania_data_prep/data/soil/bodendaten/Hoehenmodell_25m_CH/dhm25_grid_raster.asc"</span>))</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a><span class="fu">crs</span>(dem) <span class="ot">&lt;-</span> <span class="st">"epsg:21781"</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>slope <span class="ot">&lt;-</span> <span class="fu">terrain</span>(dem, <span class="at">v=</span><span class="st">"slope"</span>)</span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>locations<span class="sc">$</span>slope <span class="ot">&lt;-</span> slope <span class="sc">%&gt;%</span> <span class="fu">extract</span>(<span class="fu">vect</span>(locations)) <span class="sc">%&gt;%</span> </span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(slope)</span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a>locs_params <span class="ot">&lt;-</span> locs_params <span class="sc">%&gt;%</span> </span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(locations <span class="sc">%&gt;%</span> </span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a>              <span class="fu">st_drop_geometry</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a>              <span class="fu">select</span>(loc_id, slope))</span>
+<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-19"><a href="#cb22-19" aria-hidden="true" tabindex="-1"></a>locs_params <span class="sc">%&gt;%</span></span>
+<span id="cb22-20"><a href="#cb22-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(slope, CN)) <span class="sc">+</span> </span>
+<span id="cb22-21"><a href="#cb22-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
+<span id="cb22-22"><a href="#cb22-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">method =</span> <span class="st">"lm"</span>) <span class="sc">+</span></span>
+<span id="cb22-23"><a href="#cb22-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Optimized Curve Runoff Number (CN) vs Location Slope"</span>,</span>
+<span id="cb22-24"><a href="#cb22-24" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Slope"</span>,</span>
+<span id="cb22-25"><a href="#cb22-25" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"CN"</span>) <span class="sc">+</span></span>
+<span id="cb22-26"><a href="#cb22-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hydromontania_swb_calib_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>locs_params <span class="sc">%&gt;%</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(WASSERDURC, DC)) <span class="sc">+</span> </span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">method =</span> <span class="st">"lm"</span>) <span class="sc">+</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Optimized Drainage Coefficient (DC) vs Water Permeability"</span>,</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Water Permeability Class"</span>,</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"DC"</span>) <span class="sc">+</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hydromontania_swb_calib_files/figure-html/unnamed-chunk-12-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>locs_params <span class="sc">%&gt;%</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(SKELETT, DC)) <span class="sc">+</span> </span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">method =</span> <span class="st">"lm"</span>) <span class="sc">+</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Optimized Drainage Coefficient (DC) vs Soil Texture"</span>,</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Coarse Soil Texture Class"</span>,</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"DC"</span>) <span class="sc">+</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hydromontania_swb_calib_files/figure-html/unnamed-chunk-12-3.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>locs_params <span class="sc">%&gt;%</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(SKELETT, DC)) <span class="sc">+</span> </span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">method =</span> <span class="st">"lm"</span>) <span class="sc">+</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Optimized Drainage Coefficient (DC) vs Soil Texture"</span>,</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Coarse Soil Texture Class"</span>,</span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"DC"</span>) <span class="sc">+</span></span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hydromontania_swb_calib_files/figure-html/unnamed-chunk-12-4.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>locs_params <span class="sc">%&gt;%</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(SKELETT, MUF)) <span class="sc">+</span> </span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">method =</span> <span class="st">"lm"</span>) <span class="sc">+</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Moisture Utilization Factor (MUF) vs Soil Texture"</span>,</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Coarse Soil Texture Class"</span>,</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"MUF"</span>) <span class="sc">+</span></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hydromontania_swb_calib_files/figure-html/unnamed-chunk-12-5.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>locs_params <span class="sc">%&gt;%</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(depth, WATfc)) <span class="sc">+</span> </span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">method =</span> <span class="st">"lm"</span>) <span class="sc">+</span></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Water available at Field Capacity (WATfc) vs Soil Depth"</span>,</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Soil Depth"</span>,</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"WATfc"</span>) <span class="sc">+</span></span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hydromontania_swb_calib_files/figure-html/unnamed-chunk-12-6.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Again, there are very few locations to reach valuable insights, and in adittion, the majority of them wew poorly fitted. But in with those considerations, in some of the scatterplots some interesting patterns or trends can be seen.</p>
+<p>The chart on water at field capacity and depth should not be considered now since the same soil depth was used to correct the percentage volumetric soil moisture to absolute water available.</p>
+<p>If we manage to gather data on more stations with volumetric data, or if we manage somehow to utilize tension soil moisture in the calibration, chances are we might come up to a decent model to take soil and terrain data as input to estimate SWB soil parameters input.</p>
 </section>
 
 </main>

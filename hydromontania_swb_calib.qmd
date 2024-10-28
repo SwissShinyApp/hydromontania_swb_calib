@@ -366,6 +366,8 @@ X <- X1 %>%
 
 ```
 
+### Parameters optimization using Genetic Algorithm
+
 To calibrate the SWB model soil parameters per location we will use a global optimization algorithm, more precisely Genetic Algorithm (GA).
 
 GA will be performed by location on an iterative process, as it is expected that optimal soil parameters vary among location depending on soil properties.
@@ -469,6 +471,8 @@ results <- list()
 # optimized_params_df %>% write_rds(here("data", "swb_calibration", "vol_df_ga_swb_calibration_v2.rds"))
 
 ```
+
+### Optimization results analysis
 
 We have now obtained the optimal set of parameters for each location.
 
@@ -579,15 +583,17 @@ This raises one question and one challenge.
 
 A question, why can we have some minor fit only in one third of the locations with volumetric soil moisture data?
 
-We can think of 5 factors that could be affecting the fitness of the model: a.
-modeled rainfall input data, b.
-modeled evapotranspiration input data, c.
-the SWB model itself, d.
-the genetic algorithm used to fit the SWB soil parameters, e.
-quality of ground truth data.
+We can think of 5 factors that could be affecting the fitness of the model: 
+  a. modeled rainfall input data, 
+  b. modeled evapotranspiration input data, 
+  c. the SWB model itself, 
+  d. the genetic algorithm used to fit the SWB soil parameters, 
+  e. quality of ground truth data.
 
-To answer the question I believe we can discard a and b, since the precision of these modeled variables should be somewhat similar for the different locations.
+To answer the question I believe we can discard a, since the precision of these modeled variables should be somewhat similar for the different locations.
 We could expect a much lower precision in the modeled rainfall in mountain regions, but these 11 locations belong all to the same region, and in the following map we can even see that in the valley there are locations with higher and lower R-Squared.
+
+For b, however, we could be having untrusty ETP values for some location if the vegetation cover is not a meadow, which is what we are using as a default in the ETP model. 
 
 The model algorithm applied is the same for all locations, but it could be that it behaves better for certain soil types, vegetation covers or topology.
 
@@ -610,21 +616,134 @@ tm_shape(locations_rsq) +
 
 ```
 
-In the following section we are going to explore if there is any relation between the optimized soil parameters chosen with some of the locations' metadata.
+
+## Location based analysis
+
+In the following section we are going to explore if there is any relation between the fitness of the model and the proper optimized soil parameters chosen with some of the locations' metadata.
 
 The idea behind this is gather some insights and later on be able to model the SWB soil parameters using location metadata as input, such as soil texture, soil depth, terrain slope, etc.
 
-Unfortunately, we have a very low amount of locations which is even worsened by having to discard stations with very low fit.
+Unfortunately, we have a very low amount of locations to perform a robust analysis.
+
 
 ```{r}
 locs_params <- optimized_params_df %>% 
-  left_join(locations_int_fixed, by = "loc_id")
+  left_join(locations_int_fixed, by = "loc_id") %>% 
+  left_join(locations_rsq %>% select(loc_id, rsq), by = "loc_id")
 
-locs_params %>% 
-  ggplot(aes(
-    
-    
-  ))
+locs_params %>%
+  mutate(use = reorder(factor(ifelse(str_detect(use, "Wiese"), "Wiese", use)), desc(rsq))) %>% 
+  ggplot(aes(use, rsq)) + 
+  geom_boxplot() + 
+  labs(title = "Model fit by use of land",
+       y = "R-Squared",
+       x = "Use") +
+  theme_minimal()
+
+locs_params %>%
+  mutate(soil_type = reorder(factor(soil_type), desc(rsq))) %>% 
+  ggplot(aes(soil_type, rsq)) + 
+  geom_boxplot() + 
+  labs(title = "Model fit by soil type",
+       y = "R-Squared",
+       x = "Soil type") +
+  theme_minimal()
+
+locs_params %>%
+  mutate(topography = reorder(factor(topography), desc(rsq))) %>% 
+  ggplot(aes(topography, rsq)) + 
+  geom_boxplot() + 
+  labs(title = "Model fit by topography type",
+       y = "R-Squared",
+       x = "Topography type") +
+  theme_minimal()
+```
+
+It is quite clear that some categories for the variables explored have a poor fit. 
+This makes sense in the case of forest (Wald) for instance. Evapotranspiration used in the SWB model is also modeled for a meadow, and this variable is expected to be much higher for the same conditions in a forest. A wrong ETP will in place result in a wrong estimate in the SWB model.
+
+We should perform the same analysis for the rest of variables to identify other causes of error.
+
+
+```{r}
+# Add slope as a covariable.
+
+library(terra)
+
+dem <- rast(here("~/OpenDA/SwissShinyApp/hydromontania_data_prep/data/soil/bodendaten/Hoehenmodell_25m_CH/dhm25_grid_raster.asc"))
+
+crs(dem) <- "epsg:21781"
+
+slope <- terrain(dem, v="slope")
+
+locations$slope <- slope %>% extract(vect(locations)) %>% 
+  pull(slope)
+
+locs_params <- locs_params %>% 
+  left_join(locations %>% 
+              st_drop_geometry() %>% 
+              select(loc_id, slope))
+
+locs_params %>%
+  ggplot(aes(slope, CN)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE, method = "lm") +
+  labs(title = "Optimized Curve Runoff Number (CN) vs Location Slope",
+       x = "Slope",
+       y = "CN") +
+  theme_minimal()
+
+locs_params %>%
+  ggplot(aes(WASSERDURC, DC)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE, method = "lm") +
+  labs(title = "Optimized Drainage Coefficient (DC) vs Water Permeability",
+       x = "Water Permeability Class",
+       y = "DC") +
+  theme_minimal()
+
+locs_params %>%
+  ggplot(aes(SKELETT, DC)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE, method = "lm") +
+  labs(title = "Optimized Drainage Coefficient (DC) vs Soil Texture",
+       x = "Coarse Soil Texture Class",
+       y = "DC") +
+  theme_minimal()
+
+locs_params %>%
+  ggplot(aes(SKELETT, DC)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE, method = "lm") +
+  labs(title = "Optimized Drainage Coefficient (DC) vs Soil Texture",
+       x = "Coarse Soil Texture Class",
+       y = "DC") +
+  theme_minimal()
+
+locs_params %>%
+  ggplot(aes(SKELETT, MUF)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE, method = "lm") +
+  labs(title = "Moisture Utilization Factor (MUF) vs Soil Texture",
+       x = "Coarse Soil Texture Class",
+       y = "MUF") +
+  theme_minimal()
+
+locs_params %>%
+  ggplot(aes(depth, WATfc)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE, method = "lm") +
+  labs(title = "Water available at Field Capacity (WATfc) vs Soil Depth",
+       x = "Soil Depth",
+       y = "WATfc") +
+  theme_minimal()
 
 
 ```
+
+Again, there are very few locations to reach valuable insights, and in adittion, the majority of them wew poorly fitted. But in with those considerations, in some of the scatterplots some interesting patterns or trends can be seen.
+
+The chart on water at field capacity and depth should not be considered now since the same soil depth was used to correct the percentage volumetric soil moisture to absolute water available.
+
+If we manage to gather data on more stations with volumetric data, or if we manage somehow to utilize tension soil moisture in the calibration, chances are we might come up to a decent model to take soil and terrain data as input to estimate SWB soil parameters input.
+
