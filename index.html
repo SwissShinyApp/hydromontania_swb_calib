@@ -7,6 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="SwissDataApps">
+<meta name="dcterms.date" content="2024-10-28">
 
 <title>SWB model parameters calibration analysis</title>
 <style>
@@ -96,10 +97,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 </head>
 
-<body class="fullcontent">
+<body>
 
-<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
-
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article toc-left">
+<div id="quarto-sidebar-toc-left" class="sidebar toc-left">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Contents</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#ground-truth-data" id="toc-ground-truth-data" class="nav-link" data-scroll-target="#ground-truth-data">Ground Truth Data</a></li>
+  <li><a href="#soil-water-balance-model-runs" id="toc-soil-water-balance-model-runs" class="nav-link" data-scroll-target="#soil-water-balance-model-runs">Soil Water Balance Model Runs</a></li>
+  <li><a href="#problem-statement" id="toc-problem-statement" class="nav-link" data-scroll-target="#problem-statement">Problem Statement</a></li>
+  <li><a href="#use-of-volumetric-ground-truth-data" id="toc-use-of-volumetric-ground-truth-data" class="nav-link" data-scroll-target="#use-of-volumetric-ground-truth-data">Use of volumetric ground truth data</a></li>
+  </ul>
+</nav>
+</div>
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+</div>
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
@@ -118,6 +133,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           </div>
   </div>
     
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">October 28, 2024</p>
+    </div>
+  </div>
   
     
   </div>
@@ -127,6 +148,32 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
+<section id="introduction" class="level2">
+<h2 class="anchored" data-anchor-id="introduction">Introduction</h2>
+<p>The Hydromontania project is aimed at providing precise irrigation recommendations to farmers based on soil water balance model (SWB) outputs. Effective water management is essential for agricultural productivity, especially in regions with varied soil and weather conditions like Switzerland. The SWB model, a core component of Hydromontania, utilizes daily precipitation and evapotranspiration data alongside a set of soil and terrain parameters to estimate available soil moisture and water dynamics.</p>
+<p>For the model to provide accurate irrigation guidance, these soil and terrain parameters must be calibrated to reflect actual field conditions. This calibration process can be conducted globally or specifically for each location, optimizing the model’s accuracy by aligning its output with real-world data. To achieve this, ground truth data—primarily soil moisture measurements—will be gathered and used to fine-tune the SWB model parameters, ensuring that model outputs closely resemble observed soil conditions.</p>
+</section>
+<section id="ground-truth-data" class="level2">
+<h2 class="anchored" data-anchor-id="ground-truth-data">Ground Truth Data</h2>
+<p>To calibrate and validate the SWB model, we compiled and standardized soil moisture and rainfall data from 100 locations across Switzerland. This dataset was derived from three different sources, each contributing unique aspects to the ground truth data:</p>
+<ul>
+<li><strong>Soil Moisture and Depth-Specific Readings</strong>: The soil moisture data includes tension readings at depths of approximately 20 cm, 40 cm, and 60 cm, along with volumetric soil moisture data available exclusively for the top 20 cm layer.</li>
+</ul>
+<!-- -->
+<ul>
+<li><strong>Rainfall Data</strong>: Daily rainfall records were incorporated from each of the datasets, as precipitation is a critical component of the water balance in the model.</li>
+</ul>
+<p>Given the heterogeneity in the data sources, extensive preprocessing was necessary:</p>
+<ul>
+<li><p><strong>Resampling to Daily Time Resolution</strong>: Originally, some variables were recorded at an hourly resolution. To maintain consistency across variables and reduce data size, all data was resampled to a daily resolution.</p></li>
+<li><p><strong>Data Gaps</strong>: Since data gaps were present—some extensive and others brief (around three days)—we implemented linear interpolation for short gaps, which allowed for more continuous time series, thereby supporting robust model calibration.</p></li>
+</ul>
+<p>The data spans from 2018 or 2019 (depending on the source) to the present, covering seasonal and interannual variability. This range ensures that the calibration can account for different climate and soil moisture conditions. In addition to the main variables, metadata and precise geographic locations for each of the 100 sites were documented.</p>
+<p>To complement this ground truth data, we also collected weather data (e.g., temperature, humidity, wind speed) necessary for evapotranspiration modeling. Using this data, we ran an evapotranspiration model to generate daily evapotranspiration estimates, which serve as key inputs to the SWB model.</p>
+</section>
+<section id="soil-water-balance-model-runs" class="level2">
+<h2 class="anchored" data-anchor-id="soil-water-balance-model-runs">Soil Water Balance Model Runs</h2>
+<p>We configured the SWB model to run simulations for each location, using a grid of 36 distinct soil parameter combinations. These parameter sets represent different values of runoff curve numbers, drainage coefficients, moisture utilization factors, field capacities, and wilting points. This grid search approach allowed us to capture a range of soil moisture behaviors and enabled initial testing of which parameter sets best matched the field data.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Show Code</summary>
@@ -153,41 +200,77 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="fu">here</span>(<span class="st">"scripts"</span>,<span class="st">"db_interface.R"</span>), <span class="at">local =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
-<section id="use-of-volumetric-ground-truth-data" class="level2">
-<h2 class="anchored" data-anchor-id="use-of-volumetric-ground-truth-data">Use of volumetric ground truth data</h2>
-<p>In this section we will be calibrating SWB model soil parameters using volumetric soil moisture data as ground truth.</p>
-<p>We must consider that from the 100 locations available at the moment in the ground truth dataset only 11 of those locations register this variable.</p>
-<p>One important consideration to be made is the fact that volumetric soil moisture and available water content are different conceptually and we need to account for that.</p>
-<p>The former refers to the percentage of water in a certain volume of soil, a proportion. The latter corresponds to mm of water available, an absolute volume amount. To convert from one to the other we must consider the soil depth and adjust units with a factor.</p>
-<p>SM(mm) = SM(vol) × SoilDepth(cm) × 10</p>
-<p>Soil depth is going to be extracted from Nabodat Swiss Soil Suitability Map.</p>
-<p>Volumetric soil moisture is measured in the first 20 cm, while the AVAIL variable returned by the SWB model corresponds to the available water in the all of the root zone of the soil. We are going to extrapolate those readings in the first layer of the soil to the whole extent of it.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Show Code</summary>
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get locations and join soil properties</span></span>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get swb model output for 100 locations and a 36 rows grid search of soil parameters</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>con <span class="ot">&lt;-</span> <span class="fu">make_db_conn</span>()</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>swb_modeled <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="fu">here</span>(<span class="st">"data"</span>, <span class="st">"swb_calibration"</span>, <span class="st">"swb_calibr_params_grid.rds"</span>))</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>locations_tbl <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">tbl</span>(con, dbplyr<span class="sc">::</span><span class="fu">in_schema</span>(<span class="st">"hydromontania"</span>, <span class="st">"calibration_locs_F"</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">collect</span>()</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>locations <span class="ot">&lt;-</span> locations_tbl <span class="sc">%&gt;%</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_as_sf</span>(<span class="at">coords =</span> <span class="fu">c</span>(<span class="st">"loc_lon"</span>, <span class="st">"loc_lat"</span>), <span class="at">crs =</span> <span class="dv">4326</span>) <span class="co">#%&gt;%</span></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>sss_map <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="fu">here</span>(<span class="st">"data"</span>, <span class="st">"soil"</span>, <span class="st">"CH_Bodeneignungskarte_20160330.shp"</span>)) <span class="sc">%&gt;%</span> </span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">depth =</span> <span class="fu">case_when</span>(</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>      GRUNDIGKEI <span class="sc">==</span> <span class="dv">0</span> <span class="sc">~</span> <span class="dv">175</span>,</span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>      GRUNDIGKEI <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="dv">125</span>,</span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>      GRUNDIGKEI <span class="sc">==</span> <span class="dv">2</span> <span class="sc">~</span> <span class="dv">85</span>,</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>      GRUNDIGKEI <span class="sc">==</span> <span class="dv">3</span> <span class="sc">~</span> <span class="dv">60</span>,</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>      GRUNDIGKEI <span class="sc">==</span> <span class="dv">4</span> <span class="sc">~</span> <span class="dv">40</span>,</span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>      GRUNDIGKEI <span class="sc">==</span> <span class="dv">5</span> <span class="sc">~</span> <span class="dv">20</span>,</span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>      GRUNDIGKEI <span class="sc">==</span> <span class="dv">6</span> <span class="sc">~</span> <span class="dv">10</span>,</span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA</span></span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>      )</span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> </span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="fu">st_crs</span>(locations))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>con <span class="ot">&lt;-</span> <span class="fu">make_db_conn</span>()</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Get tension soil moisture reading for 100 locations</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co"># sm_tens &lt;- dplyr::tbl(con, dbplyr::in_schema("hydromontania", "calibration_data_X")) %&gt;% </span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co">#   # dplyr::filter(loc_id %in% loc_to_run) %&gt;% </span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co">#   dplyr::filter(var == "sm_tens") %&gt;% </span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="co">#   dplyr::collect()  </span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="co"># # review_reps &lt;- sm_tens %&gt;% </span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="co"># #   filter(depth == 20) %&gt;% </span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="co"># #   count(loc_id, date) %&gt;% </span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="co"># #   group_by(loc_id) %&gt;% </span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="co"># #   summarise(max_n = max(n),</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="co"># #             mean_n = mean(n)) </span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="co"># sm_tens_sum &lt;- sm_tens %&gt;% </span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="co">#   filter(between(value, 0.01, 79.99)) %&gt;% </span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="co">#   group_by(loc_id, date) %&gt;% </span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="co">#   summarise(sm_tens_mean = mean(value),</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a><span class="co">#             depths = list(sort(unique(depth)))) %&gt;% </span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="co">#   ungroup()</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="co"># loc_depths &lt;- sm_tens_sum %&gt;% </span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="co">#   group_by(loc_id) %&gt;% </span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a><span class="co">#   summarise(depth = paste0("0-", str_flatten(unique(unlist(depths)), "-"))) %&gt;% </span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="co">#   ungroup()</span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a><span class="co"># sm_tens_sum &lt;- sm_tens_sum %&gt;% </span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(-depths) %&gt;% </span></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a><span class="co">#   left_join(loc_depths, by = "loc_id") %&gt;% </span></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a><span class="co">#   left_join(sm_tens %&gt;% </span></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="co">#               filter(depth == 20) %&gt;% </span></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a><span class="co">#               select(loc_id, date, sm_tens_20 = value),</span></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a><span class="co">#               by = c("loc_id", "date")) %&gt;% </span></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a><span class="co">#   mutate(date = as_date(date))</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get locations and join soil properties</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co"># con &lt;- make_db_conn()</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>locations_tbl <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">tbl</span>(con, dbplyr<span class="sc">::</span><span class="fu">in_schema</span>(<span class="st">"hydromontania"</span>, <span class="st">"calibration_locs_F"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">collect</span>()</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>locations <span class="ot">&lt;-</span> locations_tbl <span class="sc">%&gt;%</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_as_sf</span>(<span class="at">coords =</span> <span class="fu">c</span>(<span class="st">"loc_lon"</span>, <span class="st">"loc_lat"</span>), <span class="at">crs =</span> <span class="dv">4326</span>) <span class="co">#%&gt;%</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>sss_map <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="fu">here</span>(<span class="st">"data"</span>, <span class="st">"soil"</span>, <span class="st">"CH_Bodeneignungskarte_20160330.shp"</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">depth =</span> <span class="fu">case_when</span>(</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>      GRUNDIGKEI <span class="sc">==</span> <span class="dv">0</span> <span class="sc">~</span> <span class="dv">175</span>,</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>      GRUNDIGKEI <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="dv">125</span>,</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>      GRUNDIGKEI <span class="sc">==</span> <span class="dv">2</span> <span class="sc">~</span> <span class="dv">85</span>,</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>      GRUNDIGKEI <span class="sc">==</span> <span class="dv">3</span> <span class="sc">~</span> <span class="dv">60</span>,</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>      GRUNDIGKEI <span class="sc">==</span> <span class="dv">4</span> <span class="sc">~</span> <span class="dv">40</span>,</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>      GRUNDIGKEI <span class="sc">==</span> <span class="dv">5</span> <span class="sc">~</span> <span class="dv">20</span>,</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>      GRUNDIGKEI <span class="sc">==</span> <span class="dv">6</span> <span class="sc">~</span> <span class="dv">10</span>,</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> </span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="fu">st_crs</span>(locations))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>Reading layer `CH_Bodeneignungskarte_20160330' from data source 
@@ -201,130 +284,216 @@ Projected CRS: CH1903+ / LV95</code></pre>
 </div>
 <details class="code-fold">
 <summary>Show Code</summary>
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>locations_int <span class="ot">&lt;-</span> locations <span class="sc">%&gt;%</span> </span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_join</span>(sss_map)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>na_rows <span class="ot">&lt;-</span> locations_int <span class="sc">%&gt;%</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">is.na</span>(depth)) <span class="sc">%&gt;%</span> </span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(loc_id<span class="sc">:</span>topography)</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>valid_polygons <span class="ot">&lt;-</span> sss_map <span class="sc">%&gt;%</span></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(depth))</span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>nearest_indices <span class="ot">&lt;-</span> <span class="fu">st_nearest_feature</span>(na_rows, valid_polygons)</span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>nearest_polygons <span class="ot">&lt;-</span> valid_polygons[nearest_indices, ]</span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>na_rows_fixed <span class="ot">&lt;-</span> na_rows <span class="sc">%&gt;%</span></span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_cols</span>(nearest_polygons <span class="sc">%&gt;%</span> <span class="fu">st_set_geometry</span>(<span class="cn">NULL</span>))</span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>locations_int_fixed <span class="ot">&lt;-</span> locations_int <span class="sc">%&gt;%</span></span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(depth)) <span class="sc">%&gt;%</span></span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_rows</span>(na_rows_fixed)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>locations_int <span class="ot">&lt;-</span> locations <span class="sc">%&gt;%</span> </span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_join</span>(sss_map)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>na_rows <span class="ot">&lt;-</span> locations_int <span class="sc">%&gt;%</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">is.na</span>(depth)) <span class="sc">%&gt;%</span> </span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(loc_id<span class="sc">:</span>topography)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>valid_polygons <span class="ot">&lt;-</span> sss_map <span class="sc">%&gt;%</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(depth))</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>nearest_indices <span class="ot">&lt;-</span> <span class="fu">st_nearest_feature</span>(na_rows, valid_polygons)</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>nearest_polygons <span class="ot">&lt;-</span> valid_polygons[nearest_indices, ]</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>na_rows_fixed <span class="ot">&lt;-</span> na_rows <span class="sc">%&gt;%</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_cols</span>(nearest_polygons <span class="sc">%&gt;%</span> <span class="fu">st_set_geometry</span>(<span class="cn">NULL</span>))</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>locations_int_fixed <span class="ot">&lt;-</span> locations_int <span class="sc">%&gt;%</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(depth)) <span class="sc">%&gt;%</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_rows</span>(na_rows_fixed)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <div class="cell">
 <details class="code-fold">
 <summary>Show Code</summary>
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get volumetric soil moisture </span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>sm_vol <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">tbl</span>(con, dbplyr<span class="sc">::</span><span class="fu">in_schema</span>(<span class="st">"hydromontania"</span>, <span class="st">"calibration_data_X"</span>)) <span class="sc">%&gt;%</span> </span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(var <span class="sc">==</span> <span class="st">"sm_vol"</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">collect</span>()  </span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>sm_vol_filt <span class="ot">&lt;-</span> sm_vol <span class="sc">%&gt;%</span> </span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">between</span>(value, <span class="dv">10</span>, <span class="dv">60</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(loc_id, date, <span class="at">sm_vol =</span> value) <span class="sc">%&gt;%</span> </span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">date =</span> <span class="fu">as_date</span>(date))</span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>sm_vol_filt <span class="sc">%&gt;%</span></span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(sm_vol)) <span class="sc">+</span></span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_density</span>() <span class="sc">+</span> </span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_light</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get volumetric soil moisture </span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>sm_vol <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">tbl</span>(con, dbplyr<span class="sc">::</span><span class="fu">in_schema</span>(<span class="st">"hydromontania"</span>, <span class="st">"calibration_data_X"</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(var <span class="sc">==</span> <span class="st">"sm_vol"</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">collect</span>()  </span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>sm_vol_filt <span class="ot">&lt;-</span> sm_vol <span class="sc">%&gt;%</span> </span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">between</span>(value, <span class="dv">10</span>, <span class="dv">60</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(loc_id, date, <span class="at">sm_vol =</span> value) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">date =</span> <span class="fu">as_date</span>(date))</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="co"># sm_vol_filt %&gt;%</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="co">#   ggplot(aes(sm_vol)) +</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="co">#   geom_density() + </span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="co">#   theme_light()</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>sm_vol_join <span class="ot">&lt;-</span> sm_vol_filt <span class="sc">%&gt;%</span> </span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(locations_int_fixed <span class="sc">%&gt;%</span> </span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>              <span class="fu">st_drop_geometry</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>              <span class="fu">select</span>(loc_id, depth),</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="st">"loc_id"</span>)</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>sm_mm_adj <span class="ot">&lt;-</span> sm_vol_join <span class="sc">%&gt;%</span> </span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">sm_mm =</span> (sm_vol <span class="sc">/</span> <span class="dv">100</span>) <span class="sc">*</span> depth <span class="sc">*</span> <span class="dv">10</span>)</span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a><span class="co"># DBI::dbDisconnect(con)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="problem-statement" class="level2">
+<h2 class="anchored" data-anchor-id="problem-statement">Problem Statement</h2>
+<p>The primary output of the SWB model is available water—the total water content (in mm) available in the root zone. This metric is conceptually similar to volumetric soil moisture content; however, a majority of the 100 locations use soil moisture tension sensors, which measure soil water potential rather than volumetric water content. This difference presents a key challenge in calibration.</p>
+<p>For a subset of locations, we have both tension-based soil moisture measurements and volumetric soil moisture readings (specifically for the 20 cm depth layer). Given that volumetric measurements are more directly related to available water in the SWB model, we began by focusing our analysis on these stations. By comparing the SWB model outputs with the ground truth volumetric data at these sites, we aim to establish a baseline relationship between the SWB model’s available water output and the observed soil moisture. This comparison will help to understand if the involved variables are highly correlated or not, and wether we can rely on all this data.</p>
+<p>To assess the relationship between volumetric and tension-based soil moisture readings, we generated a series of comparative plots:</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Join tension and volumetric soil moisture and compare them</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># sm_comparison &lt;- sm_vol_filt %&gt;% </span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(loc_id, date, sm_vol) %&gt;% </span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co">#   left_join(sm_tens_sum %&gt;% select(loc_id, date, sm_tens_20, sm_tens_mean), by = c("loc_id", "date")) %&gt;% </span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co">#   filter(</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co">#     between(sm_tens_mean, 0.01, 100),</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co">#     between(sm_tens_20, 0.01, 100)</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co">#   )</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="co"># sm_comparison %&gt;% write_rds(here("data", "swb_calibration", "sm_tens_data_comparison.rds"))</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>sm_comparison <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="fu">here</span>(<span class="st">"data"</span>, <span class="st">"swb_calibration"</span>, <span class="st">"sm_tens_data_comparison.rds"</span>))</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="co"># sm_comparison$loc_id %&gt;% unique()</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>sm_comparison <span class="sc">%&gt;%</span> </span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(sm_vol, sm_tens_20)) <span class="sc">+</span> </span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">se =</span> <span class="cn">FALSE</span>) <span class="sc">+</span> </span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> loc_id, <span class="at">scales =</span> <span class="st">"free"</span>)  <span class="sc">+</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Volumetric vs Tension Soil Moisture (0-20 cm) by Station"</span>,</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Volumetric Soil Moisture"</span>,</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Tension Soil Moisture (0-20)"</span>) <span class="sc">+</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="hydromontania_swb_calib_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="hydromontania_swb_calib_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 <details class="code-fold">
 <summary>Show Code</summary>
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>sm_vol_join <span class="ot">&lt;-</span> sm_vol_filt <span class="sc">%&gt;%</span> </span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(locations_int_fixed <span class="sc">%&gt;%</span> </span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>              <span class="fu">st_drop_geometry</span>() <span class="sc">%&gt;%</span> </span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>              <span class="fu">select</span>(loc_id, depth),</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="st">"loc_id"</span>)</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>sm_mm_adj <span class="ot">&lt;-</span> sm_vol_join <span class="sc">%&gt;%</span> </span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">sm_mm =</span> (sm_vol <span class="sc">/</span> <span class="dv">100</span>) <span class="sc">*</span> depth <span class="sc">*</span> <span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>sm_comparison <span class="sc">%&gt;%</span> </span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(sm_vol, sm_tens_mean)) <span class="sc">+</span> </span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">se =</span> <span class="cn">FALSE</span>) <span class="sc">+</span> </span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> loc_id, <span class="at">scales =</span> <span class="st">"free"</span>)  <span class="sc">+</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Volumetric vs Mean Tension Soil Moisture (0-60 cm) by Station"</span>,</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Volumetric Soil Moisture"</span>,</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Mean Tension Soil Moisture (0-60)"</span>) <span class="sc">+</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hydromontania_swb_calib_files/figure-html/unnamed-chunk-5-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
 </div>
+</div>
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>sm_comparison <span class="sc">%&gt;%</span> </span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">loc_id =</span> <span class="fu">factor</span>(loc_id)) <span class="sc">%&gt;%</span> </span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(sm_vol, sm_tens_20, <span class="at">color =</span> loc_id)) <span class="sc">+</span> </span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">se =</span> <span class="cn">FALSE</span>) <span class="sc">+</span> </span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Volumetric vs Tension Soil Moisture (0-20 cm)"</span>,</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Volumetric Soil Moisture"</span>,</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Tension Soil Moisture (0-20)"</span>) <span class="sc">+</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hydromontania_swb_calib_files/figure-html/unnamed-chunk-5-3.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Scatterplots of daily values by station show that some of them exhibit a clear, consistent relationship between volumetric and tension measurements. These stations reveal a stable relation between soil moisture tension and actual water content in the soil.</p>
+<p>In contrast, some stations show a high level of noise, with no discernible pattern between the two variables. This variability suggests that external factors or sensor inconsistencies, might influence the measurements, making direct comparisons challenging.</p>
+<p>When aggregating data across all stations, we observe variations in offset. For some locations, the soil moisture tension curve appears shifted—either to the right or left—relative to volumetric measurements. This offset suggests that different locations may require specific adjustments or calibrations, emphasizing the need for location-specific analysis.</p>
+</section>
+<section id="use-of-volumetric-ground-truth-data" class="level2">
+<h2 class="anchored" data-anchor-id="use-of-volumetric-ground-truth-data">Use of volumetric ground truth data</h2>
+<p>In this section we will be calibrating SWB model soil parameters using volumetric soil moisture data as ground truth.</p>
+<p>We must consider that from the 100 locations available at the moment in the ground truth dataset only 11 of those locations register this variable.</p>
+<p>One important consideration to be made is the fact that volumetric soil moisture and available water content are different conceptually and we need to account for that.</p>
+<p>The former refers to the percentage of water in a certain volume of soil, a proportion. The latter corresponds to mm of water available, an absolute volume amount. To convert from one to the other we must consider the soil depth and adjust units with a factor.</p>
+<p>SM(mm) = SM(vol) × SoilDepth(cm) × 10</p>
+<p>Soil depth is going to be extracted from Nabodat Swiss Soil Suitability Map.</p>
+<p>Volumetric soil moisture is measured in the first 20 cm, while the AVAIL variable returned by the SWB model corresponds to the available water in the all of the root zone of the soil. We are going to extrapolate those readings in the first layer of the soil to the whole extent of it.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Show Code</summary>
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare weather data to run SWB model</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>vars <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">11</span>, <span class="dv">19</span>)</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>locs_vol <span class="ot">&lt;-</span> sm_mm_adj<span class="sc">$</span>loc_id <span class="sc">%&gt;%</span> <span class="fu">unique</span>()</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co"># soil_params_grid &lt;- expand.grid(</span></span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co">#   CN = c(30, 70),</span></span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co">#   DC = c(0.3, 0.5, 0.7),</span></span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="co">#   MUF = c(0.05, 0.2),</span></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="co">#   WATfc = c(26, 100, 200)</span></span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="co"># ) %&gt;% </span></span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="co">#   mutate(WATwp = case_when(</span></span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="co">#     WATfc == 26 ~ 2,</span></span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="co">#     WATfc == 100 ~ 60,</span></span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="co">#     WATfc == 200 ~ 120),</span></span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="co">#     soil_params_id = row_number()</span></span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="co">#   )</span></span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>X1 <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">tbl</span>(con, dbplyr<span class="sc">::</span><span class="fu">in_schema</span>(<span class="st">"hydromontania"</span>, <span class="st">"calibration_weather_X"</span>)) <span class="sc">%&gt;%</span> </span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(loc_id <span class="sc">%in%</span> locs_vol) <span class="sc">%&gt;%</span> </span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(var_id <span class="sc">%in%</span> vars) <span class="sc">%&gt;%</span> </span>
-<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">collect</span>()</span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>variable <span class="ot">&lt;-</span> <span class="fu">GET_variables</span>()</span>
-<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>a <span class="ot">&lt;-</span> X1 <span class="sc">%&gt;%</span> </span>
-<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">group_by</span>(loc_id) <span class="sc">%&gt;%</span></span>
-<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">l_days =</span> <span class="fu">as.integer</span>(<span class="fu">difftime</span>(<span class="fu">max</span>(date), <span class="fu">min</span>(date), <span class="at">units =</span> <span class="st">"days"</span>)) <span class="sc">+</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">%&gt;%</span> </span>
-<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">group_by</span>(loc_id, var_id, l_days) <span class="sc">%&gt;%</span></span>
-<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">summarise</span>(<span class="at">n =</span> <span class="fu">n</span>(),</span>
-<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>                   <span class="at">.groups =</span> <span class="st">"drop"</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">is_complete =</span> <span class="fu">as.integer</span>(n <span class="sc">==</span> l_days)) <span class="sc">%&gt;%</span></span>
-<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">group_by</span>(loc_id) <span class="sc">%&gt;%</span></span>
-<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">summarise</span>(<span class="at">is_complete =</span> <span class="fu">sum</span>(is_complete) <span class="sc">==</span> <span class="fu">length</span>(vars)) <span class="sc">%&gt;%</span></span>
-<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(is_complete)<span class="co"># %&gt;%</span></span>
-<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> X1 <span class="sc">%&gt;%</span> </span>
-<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">group_by</span>(loc_id) <span class="sc">%&gt;%</span></span>
-<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">left_join</span>(variable, <span class="at">by =</span> dplyr<span class="sc">::</span><span class="fu">join_by</span>(var_id)) <span class="sc">%&gt;%</span></span>
-<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(loc_id, var_short, date, value) <span class="sc">%&gt;%</span></span>
-<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>  tidyr<span class="sc">::</span><span class="fu">pivot_wider</span>(<span class="at">names_from =</span> <span class="st">"var_short"</span>, <span class="at">values_from =</span> <span class="st">"value"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">arrange</span>(date, <span class="at">.by_group =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">ungroup</span>() <span class="co">#%&gt;% </span></span>
-<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>  <span class="co"># dplyr::cross_join(soil_params_grid)</span></span>
-<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a><span class="co"># ADD_field_info(c("field_lon", "field_lat", "field_elevation"))</span></span>
-<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a><span class="co">#   </span></span>
-<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a><span class="co">#   # Calculates the SWB by field and join to X1 to get the dimension_id</span></span>
-<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a><span class="co"># swb_modeled &lt;- X %&gt;%</span></span>
-<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a><span class="co">#   dplyr::group_by(loc_id, soil_params_id) %&gt;%</span></span>
-<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a><span class="co">#   dplyr::group_modify(.f = RUN_swb_calc) %&gt;%</span></span>
-<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a><span class="co">#   dplyr::ungroup() </span></span>
-<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
-<span id="cb7-56"><a href="#cb7-56" aria-hidden="true" tabindex="-1"></a><span class="co"># swb_modeled %&gt;% write_rds(here("data", "swb_calibration", "swb_calibr_params_grid_vol.rds"))</span></span>
-<span id="cb7-57"><a href="#cb7-57" aria-hidden="true" tabindex="-1"></a><span class="co"># swb_modeled &lt;- read_rds(here("data", "swb_calibration", "swb_calibr_params_grid_vol.rds"))</span></span>
-<span id="cb7-58"><a href="#cb7-58" aria-hidden="true" tabindex="-1"></a><span class="co"># soil_params_grid %&gt;% write_rds(here("data", "swb_calibration", "soil_params_grid.rds"))</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare weather data to run SWB model</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>vars <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">11</span>, <span class="dv">19</span>)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>locs_vol <span class="ot">&lt;-</span> sm_mm_adj<span class="sc">$</span>loc_id <span class="sc">%&gt;%</span> <span class="fu">unique</span>()</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="co"># soil_params_grid &lt;- expand.grid(</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="co">#   CN = c(30, 70),</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="co">#   DC = c(0.3, 0.5, 0.7),</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="co">#   MUF = c(0.05, 0.2),</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="co">#   WATfc = c(26, 100, 200)</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="co"># ) %&gt;% </span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="co">#   mutate(WATwp = case_when(</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="co">#     WATfc == 26 ~ 2,</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="co">#     WATfc == 100 ~ 60,</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="co">#     WATfc == 200 ~ 120),</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="co">#     soil_params_id = row_number()</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="co">#   )</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>X1 <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">tbl</span>(con, dbplyr<span class="sc">::</span><span class="fu">in_schema</span>(<span class="st">"hydromontania"</span>, <span class="st">"calibration_weather_X"</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(loc_id <span class="sc">%in%</span> locs_vol) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(var_id <span class="sc">%in%</span> vars) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">collect</span>()</span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>variable <span class="ot">&lt;-</span> <span class="fu">GET_variables</span>()</span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a>a <span class="ot">&lt;-</span> X1 <span class="sc">%&gt;%</span> </span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">group_by</span>(loc_id) <span class="sc">%&gt;%</span></span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">l_days =</span> <span class="fu">as.integer</span>(<span class="fu">difftime</span>(<span class="fu">max</span>(date), <span class="fu">min</span>(date), <span class="at">units =</span> <span class="st">"days"</span>)) <span class="sc">+</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">group_by</span>(loc_id, var_id, l_days) <span class="sc">%&gt;%</span></span>
+<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">summarise</span>(<span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a>                   <span class="at">.groups =</span> <span class="st">"drop"</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">is_complete =</span> <span class="fu">as.integer</span>(n <span class="sc">==</span> l_days)) <span class="sc">%&gt;%</span></span>
+<span id="cb10-36"><a href="#cb10-36" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">group_by</span>(loc_id) <span class="sc">%&gt;%</span></span>
+<span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">summarise</span>(<span class="at">is_complete =</span> <span class="fu">sum</span>(is_complete) <span class="sc">==</span> <span class="fu">length</span>(vars)) <span class="sc">%&gt;%</span></span>
+<span id="cb10-38"><a href="#cb10-38" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(is_complete)<span class="co"># %&gt;%</span></span>
+<span id="cb10-39"><a href="#cb10-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-40"><a href="#cb10-40" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> X1 <span class="sc">%&gt;%</span> </span>
+<span id="cb10-41"><a href="#cb10-41" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">group_by</span>(loc_id) <span class="sc">%&gt;%</span></span>
+<span id="cb10-42"><a href="#cb10-42" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">left_join</span>(variable, <span class="at">by =</span> dplyr<span class="sc">::</span><span class="fu">join_by</span>(var_id)) <span class="sc">%&gt;%</span></span>
+<span id="cb10-43"><a href="#cb10-43" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(loc_id, var_short, date, value) <span class="sc">%&gt;%</span></span>
+<span id="cb10-44"><a href="#cb10-44" aria-hidden="true" tabindex="-1"></a>  tidyr<span class="sc">::</span><span class="fu">pivot_wider</span>(<span class="at">names_from =</span> <span class="st">"var_short"</span>, <span class="at">values_from =</span> <span class="st">"value"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb10-45"><a href="#cb10-45" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">arrange</span>(date, <span class="at">.by_group =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb10-46"><a href="#cb10-46" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">ungroup</span>() <span class="co">#%&gt;% </span></span>
+<span id="cb10-47"><a href="#cb10-47" aria-hidden="true" tabindex="-1"></a>  <span class="co"># dplyr::cross_join(soil_params_grid)</span></span>
+<span id="cb10-48"><a href="#cb10-48" aria-hidden="true" tabindex="-1"></a><span class="co"># ADD_field_info(c("field_lon", "field_lat", "field_elevation"))</span></span>
+<span id="cb10-49"><a href="#cb10-49" aria-hidden="true" tabindex="-1"></a><span class="co">#   </span></span>
+<span id="cb10-50"><a href="#cb10-50" aria-hidden="true" tabindex="-1"></a><span class="co">#   # Calculates the SWB by field and join to X1 to get the dimension_id</span></span>
+<span id="cb10-51"><a href="#cb10-51" aria-hidden="true" tabindex="-1"></a><span class="co"># swb_modeled &lt;- X %&gt;%</span></span>
+<span id="cb10-52"><a href="#cb10-52" aria-hidden="true" tabindex="-1"></a><span class="co">#   dplyr::group_by(loc_id, soil_params_id) %&gt;%</span></span>
+<span id="cb10-53"><a href="#cb10-53" aria-hidden="true" tabindex="-1"></a><span class="co">#   dplyr::group_modify(.f = RUN_swb_calc) %&gt;%</span></span>
+<span id="cb10-54"><a href="#cb10-54" aria-hidden="true" tabindex="-1"></a><span class="co">#   dplyr::ungroup() </span></span>
+<span id="cb10-55"><a href="#cb10-55" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb10-56"><a href="#cb10-56" aria-hidden="true" tabindex="-1"></a><span class="co"># swb_modeled %&gt;% write_rds(here("data", "swb_calibration", "swb_calibr_params_grid_vol.rds"))</span></span>
+<span id="cb10-57"><a href="#cb10-57" aria-hidden="true" tabindex="-1"></a><span class="co"># swb_modeled &lt;- read_rds(here("data", "swb_calibration", "swb_calibr_params_grid_vol.rds"))</span></span>
+<span id="cb10-58"><a href="#cb10-58" aria-hidden="true" tabindex="-1"></a><span class="co"># soil_params_grid %&gt;% write_rds(here("data", "swb_calibration", "soil_params_grid.rds"))</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <p>To calibrate the SWB model soil parameters per location we will use a global optimization algorithm, more precisely Genetic Algorithm (GA).</p>
@@ -333,98 +502,98 @@ Projected CRS: CH1903+ / LV95</code></pre>
 <div class="cell">
 <details class="code-fold">
 <summary>Show Code</summary>
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>num_cores <span class="ot">&lt;-</span> <span class="fu">detectCores</span>()  <span class="co"># Detects the number of available cores</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>num_cores_to_use <span class="ot">&lt;-</span> num_cores <span class="sc">-</span> <span class="dv">4</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>objective_function <span class="ot">&lt;-</span> <span class="cf">function</span>(params, loc_id_data, sm_obs) {</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># params = c(CN, DC, MUF, WATfc, WATwp)</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Run the SWB model with current parameters for this loc_id (pseudo-code)</span></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  loc_id_data <span class="ot">&lt;-</span> loc_id_data <span class="sc">%&gt;%</span></span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">CN =</span> params[<span class="dv">1</span>], </span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>           <span class="at">DC =</span> params[<span class="dv">2</span>], </span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>           <span class="at">MUF =</span> params[<span class="dv">3</span>], </span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>           <span class="at">WATfc =</span> params[<span class="dv">4</span>], </span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>           <span class="at">WATwp =</span> WATfc <span class="sc">*</span> params[<span class="dv">5</span>])</span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Call the SWB model function to get the modeled soil water (replace with actual function)</span></span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>  swb_output <span class="ot">&lt;-</span> <span class="fu">RUN_swb_calc</span>(loc_id_data)</span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Discard first 20 days until model stabilizes</span></span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>  swb_output <span class="ot">&lt;-</span> swb_output[<span class="dv">21</span><span class="sc">:</span><span class="fu">nrow</span>(swb_output),]</span>
-<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Calculate RMSE between observed and modeled available water (swb_output$AVAIL)</span></span>
-<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>  output_join <span class="ot">&lt;-</span> sm_obs <span class="sc">%&gt;%</span> </span>
-<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">left_join</span>(swb_output, <span class="at">by =</span> <span class="st">"date"</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">AVAIL =</span> <span class="fu">rollmean</span>(AVAIL, <span class="at">k =</span> <span class="dv">5</span>, <span class="at">fill =</span> <span class="cn">NA</span>, <span class="at">align =</span> <span class="st">"center"</span>)) <span class="sc">%&gt;%</span> </span>
-<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">drop_na</span>(AVAIL)</span>
-<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>  rmse <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">mean</span>((output_join<span class="sc">$</span>AVAIL <span class="sc">-</span> output_join<span class="sc">$</span>sm_mm_smooth)<span class="sc">^</span><span class="dv">2</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span>
-<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(rmse)</span>
-<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Set up the GA for each loc_id</span></span>
-<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>run_optimization_by_loc <span class="ot">&lt;-</span> <span class="cf">function</span>(loc_id, X, sm_mm_adj) {</span>
-<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>  start <span class="ot">&lt;-</span> <span class="fu">Sys.time</span>()</span>
-<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Subset data for the given loc_id</span></span>
-<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a>  loc_id_data <span class="ot">&lt;-</span> X <span class="sc">%&gt;%</span> <span class="fu">filter</span>(loc_id <span class="sc">==</span> <span class="sc">!!</span>loc_id)</span>
-<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a>  sm_obs <span class="ot">&lt;-</span> sm_mm_adj <span class="sc">%&gt;%</span> </span>
-<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(loc_id <span class="sc">==</span> <span class="sc">!!</span>loc_id) <span class="sc">%&gt;%</span> </span>
-<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">sm_mm_smooth =</span> <span class="fu">rollmean</span>(sm_mm, <span class="at">k =</span> <span class="dv">5</span>, <span class="at">fill =</span> <span class="cn">NA</span>, <span class="at">align =</span> <span class="st">"center"</span>)) <span class="co"># smooth daily reading to reduce noise  </span></span>
-<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Run the GA optimization</span></span>
-<span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a>  GA_result <span class="ot">&lt;-</span> <span class="fu">ga</span>(<span class="at">type =</span> <span class="st">"real-valued"</span>,</span>
-<span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a>                  <span class="at">fitness =</span> <span class="cf">function</span>(params) <span class="sc">-</span><span class="fu">objective_function</span>(params, loc_id_data, sm_obs), <span class="co"># GA maximizes fitness</span></span>
-<span id="cb8-44"><a href="#cb8-44" aria-hidden="true" tabindex="-1"></a>                  <span class="at">lower =</span> <span class="fu">c</span>(<span class="dv">30</span>, <span class="fl">0.2</span>, <span class="fl">0.05</span>, <span class="dv">50</span>, <span class="fl">0.3</span>),  <span class="co"># Lower bounds for [CN, DC, MUF, WATfc, WATwp_ratio]</span></span>
-<span id="cb8-45"><a href="#cb8-45" aria-hidden="true" tabindex="-1"></a>                  <span class="at">upper =</span> <span class="fu">c</span>(<span class="dv">90</span>, <span class="fl">0.8</span>, <span class="dv">1</span>, <span class="dv">250</span>, <span class="fl">0.7</span>),    <span class="co"># Upper bounds</span></span>
-<span id="cb8-46"><a href="#cb8-46" aria-hidden="true" tabindex="-1"></a>                  <span class="at">popSize =</span> <span class="dv">100</span>,  <span class="co"># Population size</span></span>
-<span id="cb8-47"><a href="#cb8-47" aria-hidden="true" tabindex="-1"></a>                  <span class="at">maxiter =</span> <span class="dv">200</span>,  <span class="co"># Number of generations</span></span>
-<span id="cb8-48"><a href="#cb8-48" aria-hidden="true" tabindex="-1"></a>                  <span class="at">run =</span> <span class="dv">40</span>,</span>
-<span id="cb8-49"><a href="#cb8-49" aria-hidden="true" tabindex="-1"></a>                  <span class="at">parallel =</span> num_cores_to_use, </span>
-<span id="cb8-50"><a href="#cb8-50" aria-hidden="true" tabindex="-1"></a>                  <span class="at">optim =</span> <span class="cn">FALSE</span>)       <span class="co"># Early stopping if no improvement</span></span>
-<span id="cb8-51"><a href="#cb8-51" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb8-52"><a href="#cb8-52" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="fu">Sys.time</span>() <span class="sc">-</span> start)</span>
-<span id="cb8-53"><a href="#cb8-53" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb8-54"><a href="#cb8-54" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Return the optimal parameters</span></span>
-<span id="cb8-55"><a href="#cb8-55" aria-hidden="true" tabindex="-1"></a>  best_params <span class="ot">&lt;-</span> GA_result<span class="sc">@</span>solution</span>
-<span id="cb8-56"><a href="#cb8-56" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(best_params)</span>
-<span id="cb8-57"><a href="#cb8-57" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb8-58"><a href="#cb8-58" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-59"><a href="#cb8-59" aria-hidden="true" tabindex="-1"></a><span class="co"># Get list of unique loc_ids</span></span>
-<span id="cb8-60"><a href="#cb8-60" aria-hidden="true" tabindex="-1"></a>loc_ids <span class="ot">&lt;-</span> <span class="fu">unique</span>(sm_mm_adj<span class="sc">$</span>loc_id)</span>
-<span id="cb8-61"><a href="#cb8-61" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-62"><a href="#cb8-62" aria-hidden="true" tabindex="-1"></a><span class="co"># Store results for each location</span></span>
-<span id="cb8-63"><a href="#cb8-63" aria-hidden="true" tabindex="-1"></a>results <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
-<span id="cb8-64"><a href="#cb8-64" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-65"><a href="#cb8-65" aria-hidden="true" tabindex="-1"></a><span class="co"># Run the optimization for each loc_id</span></span>
-<span id="cb8-66"><a href="#cb8-66" aria-hidden="true" tabindex="-1"></a><span class="co"># for (loc_id in loc_ids) {</span></span>
-<span id="cb8-67"><a href="#cb8-67" aria-hidden="true" tabindex="-1"></a><span class="co">#   cat("Running optimization for loc_id:", loc_id, "\n")</span></span>
-<span id="cb8-68"><a href="#cb8-68" aria-hidden="true" tabindex="-1"></a><span class="co">#   </span></span>
-<span id="cb8-69"><a href="#cb8-69" aria-hidden="true" tabindex="-1"></a><span class="co">#   best_params &lt;- run_optimization_by_loc(loc_id, X, sm_mm_adj)</span></span>
-<span id="cb8-70"><a href="#cb8-70" aria-hidden="true" tabindex="-1"></a><span class="co">#   </span></span>
-<span id="cb8-71"><a href="#cb8-71" aria-hidden="true" tabindex="-1"></a><span class="co">#   # Store the results in a list</span></span>
-<span id="cb8-72"><a href="#cb8-72" aria-hidden="true" tabindex="-1"></a><span class="co">#   results[[as.character(loc_id)]] &lt;- best_params</span></span>
-<span id="cb8-73"><a href="#cb8-73" aria-hidden="true" tabindex="-1"></a><span class="co"># }</span></span>
-<span id="cb8-74"><a href="#cb8-74" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
-<span id="cb8-75"><a href="#cb8-75" aria-hidden="true" tabindex="-1"></a><span class="co"># # Convert the results into a dataframe and ensure only the first row is selected per loc_id</span></span>
-<span id="cb8-76"><a href="#cb8-76" aria-hidden="true" tabindex="-1"></a><span class="co"># optimized_params_df &lt;- do.call(rbind, lapply(names(results), function(loc_id) {</span></span>
-<span id="cb8-77"><a href="#cb8-77" aria-hidden="true" tabindex="-1"></a><span class="co">#   # Extract the first row if there are multiple solutions</span></span>
-<span id="cb8-78"><a href="#cb8-78" aria-hidden="true" tabindex="-1"></a><span class="co">#   best_solution &lt;- results[[loc_id]][1, ] </span></span>
-<span id="cb8-79"><a href="#cb8-79" aria-hidden="true" tabindex="-1"></a><span class="co">#   </span></span>
-<span id="cb8-80"><a href="#cb8-80" aria-hidden="true" tabindex="-1"></a><span class="co">#   data.frame(loc_id = loc_id,</span></span>
-<span id="cb8-81"><a href="#cb8-81" aria-hidden="true" tabindex="-1"></a><span class="co">#              CN = best_solution[1],</span></span>
-<span id="cb8-82"><a href="#cb8-82" aria-hidden="true" tabindex="-1"></a><span class="co">#              DC = best_solution[2],</span></span>
-<span id="cb8-83"><a href="#cb8-83" aria-hidden="true" tabindex="-1"></a><span class="co">#              MUF = best_solution[3],</span></span>
-<span id="cb8-84"><a href="#cb8-84" aria-hidden="true" tabindex="-1"></a><span class="co">#              WATfc = best_solution[4],</span></span>
-<span id="cb8-85"><a href="#cb8-85" aria-hidden="true" tabindex="-1"></a><span class="co">#              WATwp = best_solution[4] * best_solution[5],</span></span>
-<span id="cb8-86"><a href="#cb8-86" aria-hidden="true" tabindex="-1"></a><span class="co">#              WATwp_ratio = best_solution[5])</span></span>
-<span id="cb8-87"><a href="#cb8-87" aria-hidden="true" tabindex="-1"></a><span class="co"># }))</span></span>
-<span id="cb8-88"><a href="#cb8-88" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
-<span id="cb8-89"><a href="#cb8-89" aria-hidden="true" tabindex="-1"></a><span class="co"># # Convert loc_id to a numeric type if necessary</span></span>
-<span id="cb8-90"><a href="#cb8-90" aria-hidden="true" tabindex="-1"></a><span class="co"># optimized_params_df$loc_id &lt;- as.numeric(optimized_params_df$loc_id)</span></span>
-<span id="cb8-91"><a href="#cb8-91" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
-<span id="cb8-92"><a href="#cb8-92" aria-hidden="true" tabindex="-1"></a><span class="co"># optimized_params_df %&gt;% write_rds(here("data", "swb_calibration", "vol_df_ga_swb_calibration_v2.rds"))</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>num_cores <span class="ot">&lt;-</span> <span class="fu">detectCores</span>()  <span class="co"># Detects the number of available cores</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>num_cores_to_use <span class="ot">&lt;-</span> num_cores <span class="sc">-</span> <span class="dv">4</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>objective_function <span class="ot">&lt;-</span> <span class="cf">function</span>(params, loc_id_data, sm_obs) {</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># params = c(CN, DC, MUF, WATfc, WATwp)</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Run the SWB model with current parameters for this loc_id (pseudo-code)</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  loc_id_data <span class="ot">&lt;-</span> loc_id_data <span class="sc">%&gt;%</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">CN =</span> params[<span class="dv">1</span>], </span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>           <span class="at">DC =</span> params[<span class="dv">2</span>], </span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>           <span class="at">MUF =</span> params[<span class="dv">3</span>], </span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>           <span class="at">WATfc =</span> params[<span class="dv">4</span>], </span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>           <span class="at">WATwp =</span> WATfc <span class="sc">*</span> params[<span class="dv">5</span>])</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Call the SWB model function to get the modeled soil water (replace with actual function)</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>  swb_output <span class="ot">&lt;-</span> <span class="fu">RUN_swb_calc</span>(loc_id_data)</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Discard first 20 days until model stabilizes</span></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>  swb_output <span class="ot">&lt;-</span> swb_output[<span class="dv">21</span><span class="sc">:</span><span class="fu">nrow</span>(swb_output),]</span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Calculate RMSE between observed and modeled available water (swb_output$AVAIL)</span></span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>  output_join <span class="ot">&lt;-</span> sm_obs <span class="sc">%&gt;%</span> </span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">left_join</span>(swb_output, <span class="at">by =</span> <span class="st">"date"</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">AVAIL =</span> <span class="fu">rollmean</span>(AVAIL, <span class="at">k =</span> <span class="dv">5</span>, <span class="at">fill =</span> <span class="cn">NA</span>, <span class="at">align =</span> <span class="st">"center"</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">drop_na</span>(AVAIL)</span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a>  rmse <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">mean</span>((output_join<span class="sc">$</span>AVAIL <span class="sc">-</span> output_join<span class="sc">$</span>sm_mm_smooth)<span class="sc">^</span><span class="dv">2</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(rmse)</span>
+<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Set up the GA for each loc_id</span></span>
+<span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a>run_optimization_by_loc <span class="ot">&lt;-</span> <span class="cf">function</span>(loc_id, X, sm_mm_adj) {</span>
+<span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a>  start <span class="ot">&lt;-</span> <span class="fu">Sys.time</span>()</span>
+<span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Subset data for the given loc_id</span></span>
+<span id="cb11-36"><a href="#cb11-36" aria-hidden="true" tabindex="-1"></a>  loc_id_data <span class="ot">&lt;-</span> X <span class="sc">%&gt;%</span> <span class="fu">filter</span>(loc_id <span class="sc">==</span> <span class="sc">!!</span>loc_id)</span>
+<span id="cb11-37"><a href="#cb11-37" aria-hidden="true" tabindex="-1"></a>  sm_obs <span class="ot">&lt;-</span> sm_mm_adj <span class="sc">%&gt;%</span> </span>
+<span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(loc_id <span class="sc">==</span> <span class="sc">!!</span>loc_id) <span class="sc">%&gt;%</span> </span>
+<span id="cb11-39"><a href="#cb11-39" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">sm_mm_smooth =</span> <span class="fu">rollmean</span>(sm_mm, <span class="at">k =</span> <span class="dv">5</span>, <span class="at">fill =</span> <span class="cn">NA</span>, <span class="at">align =</span> <span class="st">"center"</span>)) <span class="co"># smooth daily reading to reduce noise  </span></span>
+<span id="cb11-40"><a href="#cb11-40" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb11-41"><a href="#cb11-41" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Run the GA optimization</span></span>
+<span id="cb11-42"><a href="#cb11-42" aria-hidden="true" tabindex="-1"></a>  GA_result <span class="ot">&lt;-</span> <span class="fu">ga</span>(<span class="at">type =</span> <span class="st">"real-valued"</span>,</span>
+<span id="cb11-43"><a href="#cb11-43" aria-hidden="true" tabindex="-1"></a>                  <span class="at">fitness =</span> <span class="cf">function</span>(params) <span class="sc">-</span><span class="fu">objective_function</span>(params, loc_id_data, sm_obs), <span class="co"># GA maximizes fitness</span></span>
+<span id="cb11-44"><a href="#cb11-44" aria-hidden="true" tabindex="-1"></a>                  <span class="at">lower =</span> <span class="fu">c</span>(<span class="dv">30</span>, <span class="fl">0.2</span>, <span class="fl">0.05</span>, <span class="dv">50</span>, <span class="fl">0.3</span>),  <span class="co"># Lower bounds for [CN, DC, MUF, WATfc, WATwp_ratio]</span></span>
+<span id="cb11-45"><a href="#cb11-45" aria-hidden="true" tabindex="-1"></a>                  <span class="at">upper =</span> <span class="fu">c</span>(<span class="dv">90</span>, <span class="fl">0.8</span>, <span class="dv">1</span>, <span class="dv">250</span>, <span class="fl">0.7</span>),    <span class="co"># Upper bounds</span></span>
+<span id="cb11-46"><a href="#cb11-46" aria-hidden="true" tabindex="-1"></a>                  <span class="at">popSize =</span> <span class="dv">100</span>,  <span class="co"># Population size</span></span>
+<span id="cb11-47"><a href="#cb11-47" aria-hidden="true" tabindex="-1"></a>                  <span class="at">maxiter =</span> <span class="dv">200</span>,  <span class="co"># Number of generations</span></span>
+<span id="cb11-48"><a href="#cb11-48" aria-hidden="true" tabindex="-1"></a>                  <span class="at">run =</span> <span class="dv">40</span>,</span>
+<span id="cb11-49"><a href="#cb11-49" aria-hidden="true" tabindex="-1"></a>                  <span class="at">parallel =</span> num_cores_to_use, </span>
+<span id="cb11-50"><a href="#cb11-50" aria-hidden="true" tabindex="-1"></a>                  <span class="at">optim =</span> <span class="cn">FALSE</span>)       <span class="co"># Early stopping if no improvement</span></span>
+<span id="cb11-51"><a href="#cb11-51" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb11-52"><a href="#cb11-52" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="fu">Sys.time</span>() <span class="sc">-</span> start)</span>
+<span id="cb11-53"><a href="#cb11-53" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb11-54"><a href="#cb11-54" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Return the optimal parameters</span></span>
+<span id="cb11-55"><a href="#cb11-55" aria-hidden="true" tabindex="-1"></a>  best_params <span class="ot">&lt;-</span> GA_result<span class="sc">@</span>solution</span>
+<span id="cb11-56"><a href="#cb11-56" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(best_params)</span>
+<span id="cb11-57"><a href="#cb11-57" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-58"><a href="#cb11-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-59"><a href="#cb11-59" aria-hidden="true" tabindex="-1"></a><span class="co"># Get list of unique loc_ids</span></span>
+<span id="cb11-60"><a href="#cb11-60" aria-hidden="true" tabindex="-1"></a>loc_ids <span class="ot">&lt;-</span> <span class="fu">unique</span>(sm_mm_adj<span class="sc">$</span>loc_id)</span>
+<span id="cb11-61"><a href="#cb11-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-62"><a href="#cb11-62" aria-hidden="true" tabindex="-1"></a><span class="co"># Store results for each location</span></span>
+<span id="cb11-63"><a href="#cb11-63" aria-hidden="true" tabindex="-1"></a>results <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb11-64"><a href="#cb11-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-65"><a href="#cb11-65" aria-hidden="true" tabindex="-1"></a><span class="co"># Run the optimization for each loc_id</span></span>
+<span id="cb11-66"><a href="#cb11-66" aria-hidden="true" tabindex="-1"></a><span class="co"># for (loc_id in loc_ids) {</span></span>
+<span id="cb11-67"><a href="#cb11-67" aria-hidden="true" tabindex="-1"></a><span class="co">#   cat("Running optimization for loc_id:", loc_id, "\n")</span></span>
+<span id="cb11-68"><a href="#cb11-68" aria-hidden="true" tabindex="-1"></a><span class="co">#   </span></span>
+<span id="cb11-69"><a href="#cb11-69" aria-hidden="true" tabindex="-1"></a><span class="co">#   best_params &lt;- run_optimization_by_loc(loc_id, X, sm_mm_adj)</span></span>
+<span id="cb11-70"><a href="#cb11-70" aria-hidden="true" tabindex="-1"></a><span class="co">#   </span></span>
+<span id="cb11-71"><a href="#cb11-71" aria-hidden="true" tabindex="-1"></a><span class="co">#   # Store the results in a list</span></span>
+<span id="cb11-72"><a href="#cb11-72" aria-hidden="true" tabindex="-1"></a><span class="co">#   results[[as.character(loc_id)]] &lt;- best_params</span></span>
+<span id="cb11-73"><a href="#cb11-73" aria-hidden="true" tabindex="-1"></a><span class="co"># }</span></span>
+<span id="cb11-74"><a href="#cb11-74" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb11-75"><a href="#cb11-75" aria-hidden="true" tabindex="-1"></a><span class="co"># # Convert the results into a dataframe and ensure only the first row is selected per loc_id</span></span>
+<span id="cb11-76"><a href="#cb11-76" aria-hidden="true" tabindex="-1"></a><span class="co"># optimized_params_df &lt;- do.call(rbind, lapply(names(results), function(loc_id) {</span></span>
+<span id="cb11-77"><a href="#cb11-77" aria-hidden="true" tabindex="-1"></a><span class="co">#   # Extract the first row if there are multiple solutions</span></span>
+<span id="cb11-78"><a href="#cb11-78" aria-hidden="true" tabindex="-1"></a><span class="co">#   best_solution &lt;- results[[loc_id]][1, ] </span></span>
+<span id="cb11-79"><a href="#cb11-79" aria-hidden="true" tabindex="-1"></a><span class="co">#   </span></span>
+<span id="cb11-80"><a href="#cb11-80" aria-hidden="true" tabindex="-1"></a><span class="co">#   data.frame(loc_id = loc_id,</span></span>
+<span id="cb11-81"><a href="#cb11-81" aria-hidden="true" tabindex="-1"></a><span class="co">#              CN = best_solution[1],</span></span>
+<span id="cb11-82"><a href="#cb11-82" aria-hidden="true" tabindex="-1"></a><span class="co">#              DC = best_solution[2],</span></span>
+<span id="cb11-83"><a href="#cb11-83" aria-hidden="true" tabindex="-1"></a><span class="co">#              MUF = best_solution[3],</span></span>
+<span id="cb11-84"><a href="#cb11-84" aria-hidden="true" tabindex="-1"></a><span class="co">#              WATfc = best_solution[4],</span></span>
+<span id="cb11-85"><a href="#cb11-85" aria-hidden="true" tabindex="-1"></a><span class="co">#              WATwp = best_solution[4] * best_solution[5],</span></span>
+<span id="cb11-86"><a href="#cb11-86" aria-hidden="true" tabindex="-1"></a><span class="co">#              WATwp_ratio = best_solution[5])</span></span>
+<span id="cb11-87"><a href="#cb11-87" aria-hidden="true" tabindex="-1"></a><span class="co"># }))</span></span>
+<span id="cb11-88"><a href="#cb11-88" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb11-89"><a href="#cb11-89" aria-hidden="true" tabindex="-1"></a><span class="co"># # Convert loc_id to a numeric type if necessary</span></span>
+<span id="cb11-90"><a href="#cb11-90" aria-hidden="true" tabindex="-1"></a><span class="co"># optimized_params_df$loc_id &lt;- as.numeric(optimized_params_df$loc_id)</span></span>
+<span id="cb11-91"><a href="#cb11-91" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb11-92"><a href="#cb11-92" aria-hidden="true" tabindex="-1"></a><span class="co"># optimized_params_df %&gt;% write_rds(here("data", "swb_calibration", "vol_df_ga_swb_calibration_v2.rds"))</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <p>We have now obtained the optimal set of parameters for each location.</p>
@@ -433,90 +602,90 @@ Projected CRS: CH1903+ / LV95</code></pre>
 <div class="cell">
 <details class="code-fold">
 <summary>Show Code</summary>
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>optimized_params_df <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="fu">here</span>(<span class="st">"data"</span>, <span class="st">"swb_calibration"</span>, <span class="st">"vol_df_ga_swb_calibration_v2.rds"</span>))</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Join the optimal parameters to the data for each loc_id</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>X_params <span class="ot">&lt;-</span> X <span class="sc">%&gt;%</span></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(optimized_params_df, <span class="at">by =</span> <span class="st">"loc_id"</span>)</span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>swb_modeled_df <span class="ot">&lt;-</span> X_params <span class="sc">%&gt;%</span></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(loc_id) <span class="sc">%&gt;%</span> </span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">group_modify</span>(<span class="at">.f =</span> RUN_swb_calc) <span class="sc">%&gt;%</span></span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">ungroup</span>()</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Join modeled results (AVAIL) with ground truth data (sm_mm_adj)</span></span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>combined_data <span class="ot">&lt;-</span> swb_modeled_df <span class="sc">%&gt;%</span></span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(sm_mm_adj, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"loc_id"</span>, <span class="st">"date"</span>)) <span class="sc">%&gt;%</span> </span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>      <span class="at">AVAIL =</span> <span class="fu">rollmean</span>(AVAIL, <span class="at">k =</span> <span class="dv">5</span>, <span class="at">fill =</span> <span class="cn">NA</span>, <span class="at">align =</span> <span class="st">"center"</span>),</span>
-<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>      <span class="at">sm_mm =</span> <span class="fu">rollmean</span>(sm_mm, <span class="at">k =</span> <span class="dv">5</span>, <span class="at">fill =</span> <span class="cn">NA</span>, <span class="at">align =</span> <span class="st">"center"</span>)</span>
-<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot the comparison of modeled AVAIL and ground truth soil moisture (sm_mm)</span></span>
-<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>combined_data <span class="sc">%&gt;%</span> </span>
-<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> date)) <span class="sc">+</span></span>
-<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> AVAIL, <span class="at">color =</span> <span class="st">"Modeled water available in mm"</span>)) <span class="sc">+</span></span>
-<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> sm_mm, <span class="at">color =</span> <span class="st">"Ground Truth SM converted to mm"</span>)) <span class="sc">+</span></span>
-<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_grid</span>(loc_id<span class="sc">~</span> <span class="dv">1</span>, <span class="at">scales =</span> <span class="st">"free_y"</span>) <span class="sc">+</span> <span class="co"># Facet by location</span></span>
-<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Modeled Available Water vs Ground Truth Soil Moisture"</span>,</span>
-<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Water (mm)"</span>,</span>
-<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>       <span class="at">color =</span> <span class="st">"Legend"</span>) <span class="sc">+</span></span>
-<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>optimized_params_df <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="fu">here</span>(<span class="st">"data"</span>, <span class="st">"swb_calibration"</span>, <span class="st">"vol_df_ga_swb_calibration_v2.rds"</span>))</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Join the optimal parameters to the data for each loc_id</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>X_params <span class="ot">&lt;-</span> X <span class="sc">%&gt;%</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(optimized_params_df, <span class="at">by =</span> <span class="st">"loc_id"</span>)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>swb_modeled_df <span class="ot">&lt;-</span> X_params <span class="sc">%&gt;%</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(loc_id) <span class="sc">%&gt;%</span> </span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">group_modify</span>(<span class="at">.f =</span> RUN_swb_calc) <span class="sc">%&gt;%</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">ungroup</span>()</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Join modeled results (AVAIL) with ground truth data (sm_mm_adj)</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>combined_data <span class="ot">&lt;-</span> swb_modeled_df <span class="sc">%&gt;%</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(sm_mm_adj, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"loc_id"</span>, <span class="st">"date"</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>      <span class="at">AVAIL =</span> <span class="fu">rollmean</span>(AVAIL, <span class="at">k =</span> <span class="dv">5</span>, <span class="at">fill =</span> <span class="cn">NA</span>, <span class="at">align =</span> <span class="st">"center"</span>),</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>      <span class="at">sm_mm =</span> <span class="fu">rollmean</span>(sm_mm, <span class="at">k =</span> <span class="dv">5</span>, <span class="at">fill =</span> <span class="cn">NA</span>, <span class="at">align =</span> <span class="st">"center"</span>)</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot the comparison of modeled AVAIL and ground truth soil moisture (sm_mm)</span></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>combined_data <span class="sc">%&gt;%</span> </span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> date)) <span class="sc">+</span></span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> AVAIL, <span class="at">color =</span> <span class="st">"Modeled water available in mm"</span>)) <span class="sc">+</span></span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> sm_mm, <span class="at">color =</span> <span class="st">"Ground Truth SM converted to mm"</span>)) <span class="sc">+</span></span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_grid</span>(loc_id<span class="sc">~</span> <span class="dv">1</span>, <span class="at">scales =</span> <span class="st">"free_y"</span>) <span class="sc">+</span> <span class="co"># Facet by location</span></span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Modeled Available Water vs Ground Truth Soil Moisture"</span>,</span>
+<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Water (mm)"</span>,</span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>       <span class="at">color =</span> <span class="st">"Legend"</span>) <span class="sc">+</span></span>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="hydromontania_swb_calib_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="hydromontania_swb_calib_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 <details class="code-fold">
 <summary>Show Code</summary>
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># combined_data %&gt;% </span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co">#   ggplot(aes(x = sm_mm, AVAIL)) +</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co">#   geom_point(alpha = 0.2) +</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co">#   geom_smooth(se = FALSE) +</span></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="co">#   labs(title = "Modeled Available Water vs Ground Truth Soil Moisture",</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="co">#        x = "Ground Truth",</span></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="co">#        y = "Modeled") +</span></span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="co">#   theme_minimal()</span></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>combined_data <span class="sc">%&gt;%</span> </span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(loc_id <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">6</span>, <span class="dv">33</span>, <span class="dv">34</span>, <span class="dv">41</span>)) <span class="sc">%&gt;%</span> </span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> date)) <span class="sc">+</span></span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> AVAIL, <span class="at">color =</span> <span class="st">"Modeled water available in mm"</span>)) <span class="sc">+</span></span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> sm_mm, <span class="at">color =</span> <span class="st">"Ground Truth SM converted to mm"</span>)) <span class="sc">+</span></span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_grid</span>(loc_id<span class="sc">~</span> <span class="dv">1</span>, <span class="at">scales =</span> <span class="st">"free_y"</span>) <span class="sc">+</span> <span class="co"># Facet by location</span></span>
-<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Modeled Available Water vs Ground Truth Soil Moisture"</span>,</span>
-<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Water (mm)"</span>,</span>
-<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>       <span class="at">color =</span> <span class="st">"Legend"</span>) <span class="sc">+</span></span>
-<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># combined_data %&gt;% </span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="co">#   ggplot(aes(x = sm_mm, AVAIL)) +</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="co">#   geom_point(alpha = 0.2) +</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="co">#   geom_smooth(se = FALSE) +</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="co">#   labs(title = "Modeled Available Water vs Ground Truth Soil Moisture",</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="co">#        x = "Ground Truth",</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="co">#        y = "Modeled") +</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="co">#   theme_minimal()</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>combined_data <span class="sc">%&gt;%</span> </span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(loc_id <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">6</span>, <span class="dv">33</span>, <span class="dv">34</span>, <span class="dv">41</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> date)) <span class="sc">+</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> AVAIL, <span class="at">color =</span> <span class="st">"Modeled water available in mm"</span>)) <span class="sc">+</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> sm_mm, <span class="at">color =</span> <span class="st">"Ground Truth SM converted to mm"</span>)) <span class="sc">+</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_grid</span>(loc_id<span class="sc">~</span> <span class="dv">1</span>, <span class="at">scales =</span> <span class="st">"free_y"</span>) <span class="sc">+</span> <span class="co"># Facet by location</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Modeled Available Water vs Ground Truth Soil Moisture"</span>,</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Water (mm)"</span>,</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>       <span class="at">color =</span> <span class="st">"Legend"</span>) <span class="sc">+</span></span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="hydromontania_swb_calib_files/figure-html/unnamed-chunk-7-2.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="hydromontania_swb_calib_files/figure-html/unnamed-chunk-8-2.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 <details class="code-fold">
 <summary>Show Code</summary>
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>combined_data <span class="sc">%&gt;%</span> </span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span>loc_id <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">6</span>, <span class="dv">33</span>, <span class="dv">34</span>, <span class="dv">41</span>)) <span class="sc">%&gt;%</span> </span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> date)) <span class="sc">+</span></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> AVAIL, <span class="at">color =</span> <span class="st">"Modeled water available in mm"</span>)) <span class="sc">+</span></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> sm_mm, <span class="at">color =</span> <span class="st">"Ground Truth SM converted to mm"</span>)) <span class="sc">+</span></span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_grid</span>(loc_id<span class="sc">~</span> <span class="dv">1</span>, <span class="at">scales =</span> <span class="st">"free_y"</span>) <span class="sc">+</span> <span class="co"># Facet by location</span></span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Modeled Available Water vs Ground Truth Soil Moisture"</span>,</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Water (mm)"</span>,</span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>       <span class="at">color =</span> <span class="st">"Legend"</span>) <span class="sc">+</span></span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>combined_data <span class="sc">%&gt;%</span> </span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span>loc_id <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">6</span>, <span class="dv">33</span>, <span class="dv">34</span>, <span class="dv">41</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> date)) <span class="sc">+</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> AVAIL, <span class="at">color =</span> <span class="st">"Modeled water available in mm"</span>)) <span class="sc">+</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> sm_mm, <span class="at">color =</span> <span class="st">"Ground Truth SM converted to mm"</span>)) <span class="sc">+</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_grid</span>(loc_id<span class="sc">~</span> <span class="dv">1</span>, <span class="at">scales =</span> <span class="st">"free_y"</span>) <span class="sc">+</span> <span class="co"># Facet by location</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Modeled Available Water vs Ground Truth Soil Moisture"</span>,</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Water (mm)"</span>,</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>       <span class="at">color =</span> <span class="st">"Legend"</span>) <span class="sc">+</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="hydromontania_swb_calib_files/figure-html/unnamed-chunk-7-3.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="hydromontania_swb_calib_files/figure-html/unnamed-chunk-8-3.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -525,18 +694,18 @@ Projected CRS: CH1903+ / LV95</code></pre>
 <div class="cell">
 <details class="code-fold">
 <summary>Show Code</summary>
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>metrics_by_loc <span class="ot">&lt;-</span> combined_data <span class="sc">%&gt;%</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(loc_id) <span class="sc">%&gt;%</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">rsq =</span> <span class="fu">rsq_vec</span>(sm_mm, AVAIL) ,       <span class="co"># R-squared</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">mae =</span> <span class="fu">mae_vec</span>(sm_mm, AVAIL),        <span class="co"># Mean Absolute Error</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">rmse =</span> <span class="fu">rmse_vec</span>(sm_mm, AVAIL),      <span class="co"># Root Mean Squared Error</span></span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">mape =</span> <span class="fu">mape_vec</span>(sm_mm, AVAIL)       <span class="co"># Mean Absolute Percentage Error</span></span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> </span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(rsq))</span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="co"># View metrics by location</span></span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(metrics_by_loc)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>metrics_by_loc <span class="ot">&lt;-</span> combined_data <span class="sc">%&gt;%</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(loc_id) <span class="sc">%&gt;%</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">rsq =</span> <span class="fu">rsq_vec</span>(sm_mm, AVAIL) ,       <span class="co"># R-squared</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">mae =</span> <span class="fu">mae_vec</span>(sm_mm, AVAIL),        <span class="co"># Mean Absolute Error</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">rmse =</span> <span class="fu">rmse_vec</span>(sm_mm, AVAIL),      <span class="co"># Root Mean Squared Error</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">mape =</span> <span class="fu">mape_vec</span>(sm_mm, AVAIL)       <span class="co"># Mean Absolute Percentage Error</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> </span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(rsq))</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="co"># View metrics by location</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(metrics_by_loc)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 11 × 5
@@ -556,24 +725,24 @@ Projected CRS: CH1903+ / LV95</code></pre>
 </div>
 <details class="code-fold">
 <summary>Show Code</summary>
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="co"># # Calculate overall metrics (all locations)</span></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="co"># overall_metrics &lt;- combined_data %&gt;%</span></span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="co">#   summarise(</span></span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="co">#     mae = mae_vec(sm_mm, AVAIL),</span></span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="co">#     rmse = rmse_vec(sm_mm, AVAIL),</span></span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="co">#     mape = mape_vec(sm_mm, AVAIL),</span></span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="co">#     rsq = rsq_vec(sm_mm, AVAIL)</span></span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="co">#   )</span></span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="co"># # View overall metrics</span></span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="co"># print(overall_metrics)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="co"># # Calculate overall metrics (all locations)</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="co"># overall_metrics &lt;- combined_data %&gt;%</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="co">#   summarise(</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="co">#     mae = mae_vec(sm_mm, AVAIL),</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="co">#     rmse = rmse_vec(sm_mm, AVAIL),</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="co">#     mape = mape_vec(sm_mm, AVAIL),</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="co">#     rsq = rsq_vec(sm_mm, AVAIL)</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="co">#   )</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="co"># # View overall metrics</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="co"># print(overall_metrics)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <p>Calculating R-Squared per location confirms what we’ve seen in the last chart, only 4 out of 11 locations have an r squared over 0.3, which is still a low value.</p>
 <p>This raises one question and one challenge.</p>
 <p>A question, why can we have some minor fit only in one third of the locations with volumetric soil moisture data?</p>
-<p>We can think of 5 factors that could be affecting the fitness of the model: a. modeled rainfall input data, b. modeled evapotranspiration input data, c.&nbsp;the SWB model itself, d.&nbsp;the genetic algorithm used to fit the SWB soil parameters, e. quality of ground truth data.</p>
+<p>We can think of 5 factors that could be affecting the fitness of the model: a. modeled rainfall input data, b. modeled evapotranspiration input data, c. the SWB model itself, d. the genetic algorithm used to fit the SWB soil parameters, e. quality of ground truth data.</p>
 <p>To answer the question I believe we can discard a and b, since the precision of these modeled variables should be somewhat similar for the different locations. We could expect a much lower precision in the modeled rainfall in mountain regions, but these 11 locations belong all to the same region, and in the following map we can even see that in the valley there are locations with higher and lower R-Squared.</p>
 <p>The model algorithm applied is the same for all locations, but it could be that it behaves better for certain soil types, vegetation covers or topology.</p>
 <p>For what can be seen in the time series comparison chart, some of the main parameters (field capacity and wilting point) appear to be wrong in some locations. This could be improved, but those locations even with a properly set parameters would probably still have no fit, as the two time series are no similar at all.</p>
@@ -582,17 +751,17 @@ Projected CRS: CH1903+ / LV95</code></pre>
 <div class="cell">
 <details class="code-fold">
 <summary>Show Code</summary>
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>locations_rsq <span class="ot">&lt;-</span> locations <span class="sc">%&gt;%</span> </span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">right_join</span>(metrics_by_loc <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">select</span>(loc_id, rsq))</span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_mode</span>(<span class="st">"view"</span>)</span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(locations_rsq) <span class="sc">+</span> </span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_symbols</span>(<span class="at">col =</span> <span class="st">"rsq"</span>, <span class="at">palette=</span><span class="st">"viridis"</span>) <span class="sc">+</span> </span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_basemap</span>(<span class="st">"Esri.WorldImagery"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>locations_rsq <span class="ot">&lt;-</span> locations <span class="sc">%&gt;%</span> </span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">right_join</span>(metrics_by_loc <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">select</span>(loc_id, rsq))</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_mode</span>(<span class="st">"view"</span>)</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(locations_rsq) <span class="sc">+</span> </span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_symbols</span>(<span class="at">col =</span> <span class="st">"rsq"</span>, <span class="at">palette=</span><span class="st">"viridis"</span>) <span class="sc">+</span> </span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_basemap</span>(<span class="st">"Esri.WorldImagery"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
-<div class="leaflet html-widget html-fill-item" id="htmlwidget-a4c6f619a096a002d70e" style="width:100%;height:464px;"></div>
-<script type="application/json" data-for="htmlwidget-a4c6f619a096a002d70e">{"x":{"options":{"crs":{"crsClass":"L.CRS.EPSG3857","code":null,"proj4def":null,"projectedBounds":null,"options":{}}},"calls":[{"method":"createMapPane","args":["tmap401",401]},{"method":"addProviderTiles","args":["Esri.WorldImagery",null,"Esri.WorldImagery",{"minZoom":0,"maxZoom":18,"tileSize":256,"subdomains":"abc","errorTileUrl":"","tms":false,"noWrap":false,"zoomOffset":0,"zoomReverse":false,"opacity":1,"zIndex":1,"detectRetina":false,"pane":"tilePane"}]},{"method":"addCircles","args":[[47.12533,47.20641,47.41036,47.343693,47.198006,47.464157,47.476646,47.27904,47.314053,47.38666,47.43342],[7.463274,7.489932,7.556452,7.9579144,7.641028,7.647673,7.507898,7.739681,7.6257677,7.9689674,7.7912135],[651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521],["X1","X6","X11","X19","X21","X32","X33","X34","X41","X60","X67"],"locations_rsq",{"interactive":true,"className":"","pane":"tmap401","stroke":true,"color":"#666666","weight":1,"opacity":0.5,"fill":true,"fillColor":["#21908C","#5DC863","#21908C","#3B528B","#3B528B","#440154","#5DC863","#FDE725","#5DC863","#3B528B","#21908C"],"fillOpacity":[1,1,1,1,1,1,1,1,1,1,1]},["<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>1<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.255<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>6<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.375<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>11<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.256<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>19<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.188<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>21<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.185<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>32<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.077<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>33<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.324<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>34<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.455<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>41<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.370<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>60<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.150<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>67<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.235<\/nobr><\/td><\/tr><\/table><\/div>"],null,["1","6","11","19","21","32","33","34","41","60","67"],{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null,null]},{"method":"addLegend","args":[{"colors":["#440154","#3B528B","#21908C","#5DC863","#FDE725"],"labels":["0.0 to 0.1","0.1 to 0.2","0.2 to 0.3","0.3 to 0.4","0.4 to 0.5"],"na_color":null,"na_label":"NA","opacity":1,"position":"topright","type":"unknown","title":"rsq","extra":null,"layerId":"legend401","className":"info legend locations_rsq","group":"locations_rsq"}]},{"method":"addLayersControl","args":[[],"locations_rsq",{"collapsed":true,"autoZIndex":true,"position":"topleft"}]}],"limits":{"lat":[47.12533,47.476646],"lng":[7.463274,7.9689674]},"fitBounds":[47.12533,7.463274,47.476646,7.9689674,[]]},"evals":[],"jsHooks":[]}</script>
+<div class="leaflet html-widget html-fill-item" id="htmlwidget-5c155945841a16648cc4" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-5c155945841a16648cc4">{"x":{"options":{"crs":{"crsClass":"L.CRS.EPSG3857","code":null,"proj4def":null,"projectedBounds":null,"options":{}}},"calls":[{"method":"createMapPane","args":["tmap401",401]},{"method":"addProviderTiles","args":["Esri.WorldImagery",null,"Esri.WorldImagery",{"minZoom":0,"maxZoom":18,"tileSize":256,"subdomains":"abc","errorTileUrl":"","tms":false,"noWrap":false,"zoomOffset":0,"zoomReverse":false,"opacity":1,"zIndex":1,"detectRetina":false,"pane":"tilePane"}]},{"method":"addCircles","args":[[47.12533,47.20641,47.41036,47.343693,47.198006,47.464157,47.476646,47.27904,47.314053,47.38666,47.43342],[7.463274,7.489932,7.556452,7.9579144,7.641028,7.647673,7.507898,7.739681,7.6257677,7.9689674,7.7912135],[651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521,651.0769694211521],["X1","X6","X11","X19","X21","X32","X33","X34","X41","X60","X67"],"locations_rsq",{"interactive":true,"className":"","pane":"tmap401","stroke":true,"color":"#666666","weight":1,"opacity":0.5,"fill":true,"fillColor":["#21908C","#5DC863","#21908C","#3B528B","#3B528B","#440154","#5DC863","#FDE725","#5DC863","#3B528B","#21908C"],"fillOpacity":[1,1,1,1,1,1,1,1,1,1,1]},["<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>1<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.255<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>6<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.375<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>11<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.256<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>19<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.188<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>21<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.185<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>32<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.077<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>33<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.324<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>34<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.455<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>41<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.370<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>60<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.150<\/nobr><\/td><\/tr><\/table><\/div>","<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}<\/style><div style=\"max-height:25em;padding-right:0px;\"><table>\n\t\t\t   <thead><tr><th colspan=\"2\"><b>67<\/b><\/th><\/thead><\/tr><tr><td style=\"color: #888888;\"><nobr>rsq<\/nobr><\/td><td align=\"right\"><nobr>0.235<\/nobr><\/td><\/tr><\/table><\/div>"],null,["1","6","11","19","21","32","33","34","41","60","67"],{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null,null]},{"method":"addLegend","args":[{"colors":["#440154","#3B528B","#21908C","#5DC863","#FDE725"],"labels":["0.0 to 0.1","0.1 to 0.2","0.2 to 0.3","0.3 to 0.4","0.4 to 0.5"],"na_color":null,"na_label":"NA","opacity":1,"position":"topright","type":"unknown","title":"rsq","extra":null,"layerId":"legend401","className":"info legend locations_rsq","group":"locations_rsq"}]},{"method":"addLayersControl","args":[[],"locations_rsq",{"collapsed":true,"autoZIndex":true,"position":"topleft"}]}],"limits":{"lat":[47.12533,47.476646],"lng":[7.463274,7.9689674]},"fitBounds":[47.12533,7.463274,47.476646,7.9689674,[]]},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 <p>In the following section we are going to explore if there is any relation between the optimized soil parameters chosen with some of the locations’ metadata.</p>
@@ -601,19 +770,19 @@ Projected CRS: CH1903+ / LV95</code></pre>
 <div class="cell">
 <details class="code-fold">
 <summary>Show Code</summary>
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>locs_params <span class="ot">&lt;-</span> optimized_params_df <span class="sc">%&gt;%</span> </span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(locations_int_fixed, <span class="at">by =</span> <span class="st">"loc_id"</span>)</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>locs_params <span class="sc">%&gt;%</span> </span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(</span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>  ))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>locs_params <span class="ot">&lt;-</span> optimized_params_df <span class="sc">%&gt;%</span> </span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(locations_int_fixed, <span class="at">by =</span> <span class="st">"loc_id"</span>)</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>locs_params <span class="sc">%&gt;%</span> </span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>  ))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="hydromontania_swb_calib_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="hydromontania_swb_calib_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>

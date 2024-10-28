@@ -1,15 +1,66 @@
 ---
 title: "SWB model parameters calibration analysis"
 author: "SwissDataApps"
+date: "2024-10-28"
 output-file: index.html
 format:
   html:
+    theme: cosmo
+    toc: true
     code-fold: true
+    toc-title: "Contents"
+    toc-location: left
     code-summary: "Show Code"
+    favicon: images/ssa_icon_free.png
+    logo: images/logo_black_complete.png
 execute:
   echo: true       # Show code output
   warning: false   # Suppress warnings
+editor: 
+  markdown: 
+    wrap: sentence
 ---
+
+## Introduction
+
+The Hydromontania project is aimed at providing precise irrigation recommendations to farmers based on soil water balance model (SWB) outputs.
+Effective water management is essential for agricultural productivity, especially in regions with varied soil and weather conditions like Switzerland.
+The SWB model, a core component of Hydromontania, utilizes daily precipitation and evapotranspiration data alongside a set of soil and terrain parameters to estimate available soil moisture and water dynamics.
+
+For the model to provide accurate irrigation guidance, these soil and terrain parameters must be calibrated to reflect actual field conditions.
+This calibration process can be conducted globally or specifically for each location, optimizing the model's accuracy by aligning its output with real-world data.
+To achieve this, ground truth data—primarily soil moisture measurements—will be gathered and used to fine-tune the SWB model parameters, ensuring that model outputs closely resemble observed soil conditions.
+
+## Ground Truth Data
+
+To calibrate and validate the SWB model, we compiled and standardized soil moisture and rainfall data from 100 locations across Switzerland.
+This dataset was derived from three different sources, each contributing unique aspects to the ground truth data:
+
+-   **Soil Moisture and Depth-Specific Readings**: The soil moisture data includes tension readings at depths of approximately 20 cm, 40 cm, and 60 cm, along with volumetric soil moisture data available exclusively for the top 20 cm layer.
+
+<!-- -->
+
+-   **Rainfall Data**: Daily rainfall records were incorporated from each of the datasets, as precipitation is a critical component of the water balance in the model.
+
+Given the heterogeneity in the data sources, extensive preprocessing was necessary:
+
+-   **Resampling to Daily Time Resolution**: Originally, some variables were recorded at an hourly resolution.
+    To maintain consistency across variables and reduce data size, all data was resampled to a daily resolution.
+
+-   **Data Gaps**: Since data gaps were present—some extensive and others brief (around three days)—we implemented linear interpolation for short gaps, which allowed for more continuous time series, thereby supporting robust model calibration.
+
+The data spans from 2018 or 2019 (depending on the source) to the present, covering seasonal and interannual variability.
+This range ensures that the calibration can account for different climate and soil moisture conditions.
+In addition to the main variables, metadata and precise geographic locations for each of the 100 sites were documented.
+
+To complement this ground truth data, we also collected weather data (e.g., temperature, humidity, wind speed) necessary for evapotranspiration modeling.
+Using this data, we ran an evapotranspiration model to generate daily evapotranspiration estimates, which serve as key inputs to the SWB model.
+
+
+## Soil Water Balance Model Runs
+
+We configured the SWB model to run simulations for each location, using a grid of 36 distinct soil parameter combinations. These parameter sets represent different values of runoff curve numbers, drainage coefficients, moisture utilization factors, field capacities, and wilting points. This grid search approach allowed us to capture a range of soil moisture behaviors and enabled initial testing of which parameter sets best matched the field data.
+
 
 ```{r}
 # load libraries
@@ -37,32 +88,56 @@ source(here("scripts","db_interface.R"), local = FALSE)
 
 ```{r}
 
+# Get swb model output for 100 locations and a 36 rows grid search of soil parameters
+
+swb_modeled <- read_rds(here("data", "swb_calibration", "swb_calibr_params_grid.rds"))
+
+con <- make_db_conn()
+
+# Get tension soil moisture reading for 100 locations
+
+# sm_tens <- dplyr::tbl(con, dbplyr::in_schema("hydromontania", "calibration_data_X")) %>% 
+#   # dplyr::filter(loc_id %in% loc_to_run) %>% 
+#   dplyr::filter(var == "sm_tens") %>% 
+#   dplyr::collect()  
+# 
+# # review_reps <- sm_tens %>% 
+# #   filter(depth == 20) %>% 
+# #   count(loc_id, date) %>% 
+# #   group_by(loc_id) %>% 
+# #   summarise(max_n = max(n),
+# #             mean_n = mean(n)) 
+# 
+# sm_tens_sum <- sm_tens %>% 
+#   filter(between(value, 0.01, 79.99)) %>% 
+#   group_by(loc_id, date) %>% 
+#   summarise(sm_tens_mean = mean(value),
+#             depths = list(sort(unique(depth)))) %>% 
+#   ungroup()
+# 
+# loc_depths <- sm_tens_sum %>% 
+#   group_by(loc_id) %>% 
+#   summarise(depth = paste0("0-", str_flatten(unique(unlist(depths)), "-"))) %>% 
+#   ungroup()
+# 
+# sm_tens_sum <- sm_tens_sum %>% 
+#   select(-depths) %>% 
+#   left_join(loc_depths, by = "loc_id") %>% 
+#   left_join(sm_tens %>% 
+#               filter(depth == 20) %>% 
+#               select(loc_id, date, sm_tens_20 = value),
+#               by = c("loc_id", "date")) %>% 
+#   mutate(date = as_date(date))
+
+
+
+
 ```
-
-
-## Use of volumetric ground truth data 
-
-In this section we will be calibrating SWB model soil parameters using volumetric soil moisture data as ground truth. 
-
-We must consider that from the 100 locations available at  the moment in the ground truth dataset only 11 of those locations register this variable.
-
-
-
-One important consideration to be made is the fact that volumetric soil moisture and available water content are different conceptually and we need to account for that.
-
-The former refers to the percentage of water in a certain volume of soil, a proportion. The latter corresponds to mm of water available, an absolute volume amount. To convert from one to the other we must consider the soil depth and adjust units with a factor.
-
-SM(mm) = SM(vol) × SoilDepth(cm) × 10
-
-Soil depth is going to be extracted from Nabodat Swiss Soil Suitability Map.
-
-Volumetric soil moisture is measured in the first 20 cm, while the AVAIL variable returned by the SWB model corresponds to the available water in the all of the root zone of the soil. We are going to extrapolate those readings in the first layer of the soil to the whole extent of it.
-
 
 ```{r}
 # Get locations and join soil properties
 
-con <- make_db_conn()
+# con <- make_db_conn()
 
 locations_tbl <- dplyr::tbl(con, dbplyr::in_schema("hydromontania", "calibration_locs_F")) %>%
   collect()
@@ -109,13 +184,10 @@ locations_int_fixed <- locations_int %>%
 ```
 
 
-
 ```{r}
 
 
 # Get volumetric soil moisture 
-
-
 
 sm_vol <- dplyr::tbl(con, dbplyr::in_schema("hydromontania", "calibration_data_X")) %>% 
   dplyr::filter(var == "sm_vol") %>% 
@@ -126,10 +198,10 @@ sm_vol_filt <- sm_vol %>%
   select(loc_id, date, sm_vol = value) %>% 
   mutate(date = as_date(date))
 
-sm_vol_filt %>%
-  ggplot(aes(sm_vol)) +
-  geom_density() + 
-  theme_light()
+# sm_vol_filt %>%
+#   ggplot(aes(sm_vol)) +
+#   geom_density() + 
+#   theme_light()
 
 sm_vol_join <- sm_vol_filt %>% 
   left_join(locations_int_fixed %>% 
@@ -141,12 +213,95 @@ sm_mm_adj <- sm_vol_join %>%
   mutate(sm_mm = (sm_vol / 100) * depth * 10)
 
 
-
-
+# 
+# DBI::dbDisconnect(con)
 
 
 
 ```
+
+
+## Problem Statement
+
+The primary output of the SWB model is available water—the total water content (in mm) available in the root zone. This metric is conceptually similar to volumetric soil moisture content; however, a majority of the 100 locations use soil moisture tension sensors, which measure soil water potential rather than volumetric water content. This difference presents a key challenge in calibration.
+
+For a subset of locations, we have both tension-based soil moisture measurements and volumetric soil moisture readings (specifically for the 20 cm depth layer). Given that volumetric measurements are more directly related to available water in the SWB model, we began by focusing our analysis on these stations. By comparing the SWB model outputs with the ground truth volumetric data at these sites, we aim to establish a baseline relationship between the SWB model’s available water output and the observed soil moisture. This comparison will help to understand if the involved variables are highly correlated or not, and wether we can rely on all this data.
+
+To assess the relationship between volumetric and tension-based soil moisture readings, we generated a series of comparative plots:
+
+```{r}
+# Join tension and volumetric soil moisture and compare them
+
+# sm_comparison <- sm_vol_filt %>% 
+#   select(loc_id, date, sm_vol) %>% 
+#   left_join(sm_tens_sum %>% select(loc_id, date, sm_tens_20, sm_tens_mean), by = c("loc_id", "date")) %>% 
+#   filter(
+#     between(sm_tens_mean, 0.01, 100),
+#     between(sm_tens_20, 0.01, 100)
+#   )
+# 
+# sm_comparison %>% write_rds(here("data", "swb_calibration", "sm_tens_data_comparison.rds"))
+sm_comparison <- read_rds(here("data", "swb_calibration", "sm_tens_data_comparison.rds"))
+
+# sm_comparison$loc_id %>% unique()
+
+sm_comparison %>% 
+  ggplot(aes(sm_vol, sm_tens_20)) + 
+  geom_point(alpha = 0.5) +
+  geom_smooth(se = FALSE) + 
+  facet_wrap(~ loc_id, scales = "free")  +
+  labs(title = "Volumetric vs Tension Soil Moisture (0-20 cm) by Station",
+       x = "Volumetric Soil Moisture",
+       y = "Tension Soil Moisture (0-20)") +
+  theme_minimal()
+
+sm_comparison %>% 
+  ggplot(aes(sm_vol, sm_tens_mean)) + 
+  geom_point(alpha = 0.5) +
+  geom_smooth(se = FALSE) + 
+  facet_wrap(~ loc_id, scales = "free")  +
+  labs(title = "Volumetric vs Mean Tension Soil Moisture (0-60 cm) by Station",
+       x = "Volumetric Soil Moisture",
+       y = "Mean Tension Soil Moisture (0-60)") +
+  theme_minimal()
+
+sm_comparison %>% 
+  mutate(loc_id = factor(loc_id)) %>% 
+  ggplot(aes(sm_vol, sm_tens_20, color = loc_id)) + 
+  geom_point(alpha = 0.5) +
+  geom_smooth(se = FALSE) + 
+  labs(title = "Volumetric vs Tension Soil Moisture (0-20 cm)",
+       x = "Volumetric Soil Moisture",
+       y = "Tension Soil Moisture (0-20)") +
+  theme_minimal()
+
+```
+
+Scatterplots of daily values by station show that some of them exhibit a clear, consistent relationship between volumetric and tension measurements. These stations reveal a stable relation between soil moisture tension and actual water content in the soil.
+
+In contrast, some stations show a high level of noise, with no discernible pattern between the two variables. This variability suggests that external factors or sensor inconsistencies, might influence the measurements, making direct comparisons challenging.
+
+When aggregating data across all stations, we observe variations in offset. For some locations, the soil moisture tension curve appears shifted—either to the right or left—relative to volumetric measurements. This offset suggests that different locations may require specific adjustments or calibrations, emphasizing the need for location-specific analysis.
+
+
+## Use of volumetric ground truth data
+
+In this section we will be calibrating SWB model soil parameters using volumetric soil moisture data as ground truth.
+
+We must consider that from the 100 locations available at the moment in the ground truth dataset only 11 of those locations register this variable.
+
+One important consideration to be made is the fact that volumetric soil moisture and available water content are different conceptually and we need to account for that.
+
+The former refers to the percentage of water in a certain volume of soil, a proportion.
+The latter corresponds to mm of water available, an absolute volume amount.
+To convert from one to the other we must consider the soil depth and adjust units with a factor.
+
+SM(mm) = SM(vol) × SoilDepth(cm) × 10
+
+Soil depth is going to be extracted from Nabodat Swiss Soil Suitability Map.
+
+Volumetric soil moisture is measured in the first 20 cm, while the AVAIL variable returned by the SWB model corresponds to the available water in the all of the root zone of the soil.
+We are going to extrapolate those readings in the first layer of the soil to the whole extent of it.
 
 
 ```{r}
@@ -211,12 +366,12 @@ X <- X1 %>%
 
 ```
 
-
-To calibrate the SWB model soil parameters per location we will use a global optimization algorithm, more precisely Genetic Algorithm (GA). 
+To calibrate the SWB model soil parameters per location we will use a global optimization algorithm, more precisely Genetic Algorithm (GA).
 
 GA will be performed by location on an iterative process, as it is expected that optimal soil parameters vary among location depending on soil properties.
 
-After an initial attempt using the daily time series unprocessed it was clear that noise in the daily resolution would affect the error and consequently the parameter optimizing. For that reason both measured and modeled daily time series were smoothed using a 5 days moving average.
+After an initial attempt using the daily time series unprocessed it was clear that noise in the daily resolution would affect the error and consequently the parameter optimizing.
+For that reason both measured and modeled daily time series were smoothed using a 5 days moving average.
 
 ```{r}
 
@@ -388,8 +543,8 @@ combined_data %>%
 
 ```
 
-The compared time series by location shows that in a small set of locations (e.g. 34, 33, 6, 41)  the model output has a decent fit with the converted ground truth data. For the rest (majority) of locations, the model fails completely to fit the data.
-
+The compared time series by location shows that in a small set of locations (e.g. 34, 33, 6, 41) the model output has a decent fit with the converted ground truth data.
+For the rest (majority) of locations, the model fails completely to fit the data.
 
 ```{r}
 metrics_by_loc <- combined_data %>%
@@ -424,23 +579,25 @@ This raises one question and one challenge.
 
 A question, why can we have some minor fit only in one third of the locations with volumetric soil moisture data?
 
-We can think of 5 factors that could be affecting the fitness of the model: 
-  a. modeled rainfall input data, 
-  b. modeled evapotranspiration input data,
-  c. the SWB model itself,
-  d. the genetic algorithm used to fit the SWB soil parameters,
-  e. quality of ground truth data.
-  
-To answer the question I believe we can discard a and b, since the precision of these modeled variables should be somewhat similar for the different locations. We could expect a much lower precision in the modeled rainfall in mountain regions, but these 11 locations belong all to the same region, and in the following map we can even see that in the valley there are locations with higher and lower R-Squared.
+We can think of 5 factors that could be affecting the fitness of the model: a.
+modeled rainfall input data, b.
+modeled evapotranspiration input data, c.
+the SWB model itself, d.
+the genetic algorithm used to fit the SWB soil parameters, e.
+quality of ground truth data.
+
+To answer the question I believe we can discard a and b, since the precision of these modeled variables should be somewhat similar for the different locations.
+We could expect a much lower precision in the modeled rainfall in mountain regions, but these 11 locations belong all to the same region, and in the following map we can even see that in the valley there are locations with higher and lower R-Squared.
 
 The model algorithm applied is the same for all locations, but it could be that it behaves better for certain soil types, vegetation covers or topology.
 
-For what can be seen in the time series comparison chart, some of the main parameters (field capacity and wilting point) appear to be wrong in some locations. This could be improved, but those locations even with a properly set parameters would probably still have no fit, as the two time series are no similar at all.
+For what can be seen in the time series comparison chart, some of the main parameters (field capacity and wilting point) appear to be wrong in some locations.
+This could be improved, but those locations even with a properly set parameters would probably still have no fit, as the two time series are no similar at all.
 
-Regarding the last factor, quality of ground truth data, if we look at the time series chart of those locations with no fits, some of them exhibit unexpected patterns in the readings. 
+Regarding the last factor, quality of ground truth data, if we look at the time series chart of those locations with no fits, some of them exhibit unexpected patterns in the readings.
 
-The challenge previously mentioned is now to improve the fitness fo those location that have now some minor fit. For this purpose we are going to try different approaches, some of which have already been implemented like increasing the thoroughness of the genetic algorithm search and applying moving averages to the daily time series to reduce the noise effect.
-
+The challenge previously mentioned is now to improve the fitness fo those location that have now some minor fit.
+For this purpose we are going to try different approaches, some of which have already been implemented like increasing the thoroughness of the genetic algorithm search and applying moving averages to the daily time series to reduce the noise effect.
 
 ```{r}
 locations_rsq <- locations %>% 
@@ -459,7 +616,6 @@ The idea behind this is gather some insights and later on be able to model the S
 
 Unfortunately, we have a very low amount of locations which is even worsened by having to discard stations with very low fit.
 
-
 ```{r}
 locs_params <- optimized_params_df %>% 
   left_join(locations_int_fixed, by = "loc_id")
@@ -472,5 +628,3 @@ locs_params %>%
 
 
 ```
-
-
