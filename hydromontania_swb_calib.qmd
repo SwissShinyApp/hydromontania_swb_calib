@@ -144,7 +144,7 @@ locations_tbl <- dplyr::tbl(con, dbplyr::in_schema("hydromontania", "calibration
 locations <- locations_tbl %>%
   st_as_sf(coords = c("loc_lon", "loc_lat"), crs = 4326) #%>%
 
-sss_map <- st_read(here("data", "soil", "CH_Bodeneignungskarte_20160330.shp")) %>% 
+sss_map <- st_read(here("data", "soil", "CH_Bodeneignungskarte_20160330.shp"), quiet = TRUE) %>% 
   mutate(
     depth = case_when(
       GRUNDIGKEI == 0 ~ 175,

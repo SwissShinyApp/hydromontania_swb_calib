@@ -20,7 +20,7 @@ calcWatBal <- function(data) {
   data <- data %>% 
     mutate(
       date = as_date(date),
-      Rain = ifelse(Rain < 2, 0, Rain),
+      Rain = ifelse(Rain < 1, 0, Rain),
       RUNOFF = NA,
       DRAIN = NA,
       TRAN = NA,
@@ -145,4 +145,121 @@ RUN_swb_calc <- function(X, y, ...){
   X %>% TRANSFORM_as_df() %>%
     calcWatBal() %>%
     dplyr::select(all_of(c("date", "R", "AVAIL", "TRAN", "DRAIN", "RUNOFF", "hydro_state", "hydro_state2")))
+}
+
+
+# error metrics used for calibration
+pearson_correlation <- function(data, col1, col2) {
+  cor(data[[col1]], data[[col2]], method = "pearson")
+}
+
+pearson_diff_correlation <- function(data, col1, col2) {
+  diff_data <- data %>%
+    mutate(
+      diff_col1 = c(NA, diff(.data[[col1]])),
+      diff_col2 = c(NA, diff(.data[[col2]]))
+    ) %>%
+    drop_na()
+  
+  cor(diff_data$diff_col1, diff_data$diff_col2, method = "pearson")
+}
+
+spearman_correlation <- function(data, col1, col2) {
+  cor(data[[col1]], data[[col2]], method = "spearman")
+}
+
+integral_based_distance <- function(data, col1, col2) {
+  abs_diff <- abs(data[[col1]] - data[[col2]])
+  trapz(1:nrow(data), abs_diff) # Numerically integrates the absolute differences
+}
+
+ks_test <- function(data, col1, col2) {
+  ks.test(data[[col2]], data[[col1]])$statistic %>% 
+    as.numeric()
+}
+
+linear_regression_errors <- function(data, col1, col2) {
+  # Fit the regression model
+  model <- lm(as.formula(paste(col2, "~", col1)), data = data)
+  data <- data %>%
+    mutate(
+      predicted = predict(model),
+      residuals = .data[[col1]] - predicted
+    )
+  
+  data.frame(
+    lm_rsquared = summary(model)$r.squared,
+    lm_mae = mae_vec(data[[col1]], data$predicted), # MAE on actual values
+    lm_mape = mape_vec(data[[col1]], data$predicted) # MAPE on actual vs predicted
+  )
+}
+
+
+
+run_all_metrics <- function(data, groundtruth_col, index_col) {
+  pearson <- pearson_correlation(data, groundtruth_col, index_col)
+  pearson_diff <- pearson_diff_correlation(data, groundtruth_col, index_col)
+  spearman <- spearman_correlation(data, groundtruth_col, index_col)
+  # cosine_sim <- cosine_similarity(data, groundtruth_col, index_col)
+  integral_dist <- integral_based_distance(data, groundtruth_col, index_col)
+  ks_stat <- ks_test(data, groundtruth_col, index_col)
+  linear_errors <- linear_regression_errors(data, groundtruth_col, index_col)
+  # var_errors <- var_model_errors(data, groundtruth_col, index_col)
+  tibble(
+    pearson = pearson,
+    pearson_diff = pearson_diff,
+    spearman = spearman,
+    # cosine_similarity = cosine_sim,
+    integral_distance = integral_dist,
+    ks_stat = ks_stat,
+    linear_errors = linear_errors
+    # var_errors = var_errors
+  ) %>% 
+    unnest_wider(linear_errors)
+}
+
+objective_function <- function(params, loc_id_data, sm_obs) {
+  # params = c(CN, DC, MUF, WATfc, WATwp)
+  
+  # Run the SWB model with current parameters for this loc_id (pseudo-code)
+  loc_id_data <- loc_id_data %>%
+    mutate(CN = params[1], 
+           DC = params[2], 
+           MUF = params[3], 
+           WATfc = params[4], 
+           WATwp = WATfc * params[5])
+  
+  # Call the SWB model function to get the modeled soil water (replace with actual function)
+  swb_output <- RUN_swb_calc(loc_id_data)
+  
+  # Discard first 20 days until model stabilizes
+  swb_output <- swb_output[21:nrow(swb_output),]
+  
+  # Calculate RMSE between observed and modeled available water (swb_output$AVAIL)
+  output_join <- sm_obs %>% 
+    left_join(swb_output, by = "date") %>% 
+    mutate(hydro_state = rollmean(hydro_state, k = 5, fill = NA, align = "center")) %>% 
+    drop_na(hydro_state)
+  
+  # rmse <- sqrt(mean((output_join$AVAIL - output_join$sm_mm_smooth)^2, na.rm = TRUE))
+  # browser()
+  pearson_diff = pearson_diff_correlation(output_join, "sm", "hydro_state")
+  lm_errors = linear_regression_errors(output_join, "sm", "hydro_state")
+  
+  # Normalize metrics
+  # norm_pearson <- (avg_metrics$avg_pearson - (-0.1)) / (0.3 - (-0.1))  # Normalize to [0, 1]
+  # norm_mape <- avg_metrics$avg_lm_mape / 2                            # Normalize to [0, 1]
+  
+  # # Handle out-of-bounds values
+  # norm_pearson <- pmax(0, pmin(1, norm_pearson))
+  # norm_pearson_inverted <- 1 - norm_pearson
+  # norm_integral <- pmax(0, pmin(1, norm_integral))
+  # norm_mape <- pmax(0, pmin(1, norm_mape))
+  
+  # Composite score with weights
+  composite_score <- pearson_diff * 0.5 +  # Weight Pearson (maximize)
+    (1 - (min(100, lm_errors$lm_mape) / 100)) * -0.5                        # Weight MAPE (minimize)
+  
+  
+  return(composite_score)
 }

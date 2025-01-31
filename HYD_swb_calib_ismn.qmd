@@ -1,0 +1,398 @@
+---
+title: "SWB model parameters calibration analysis on ISMN dataset"
+author: "SwissDataApps"
+date: "2024-10-28"
+output-file: index.html
+format:
+  html:
+    theme: cosmo
+    toc: false
+    code-fold: true
+    toc-title: "Contents"
+    toc-location: left
+    code-summary: "Show Code"
+    favicon: images/ssa_icon_free.png
+    logo: images/logo_black_complete.png
+execute:
+  echo: true       # Show code output
+  warning: false   # Suppress warnings
+editor: 
+  markdown: 
+    wrap: sentence
+---
+
+## Introduction
+
+The Hydromontania project is aimed at providing precise irrigation recommendations to farmers based on soil water balance model (SWB) outputs.
+Effective water management is essential for agricultural productivity, especially in regions with varied soil and weather conditions like Switzerland.
+The SWB model, a core component of Hydromontania, utilizes daily precipitation and evapotranspiration data alongside a set of soil and terrain parameters to estimate available soil moisture and water dynamics.
+
+For the model to provide accurate irrigation guidance, these soil and terrain parameters must be calibrated to reflect actual field conditions.
+This calibration process can be conducted globally or specifically for each location, optimizing the model's accuracy by aligning its output with real-world data.
+To achieve this, ground truth data—primarily soil moisture measurements—will be gathered and used to fine-tune the SWB model parameters, ensuring that model outputs closely resemble observed soil conditions.
+
+## Ground Truth Data
+
+This second report is based on soil moisture data obtained from the International Soil Moisture Network (ISMN), a collaborative initiative aimed at establishing and maintaining a global in situ soil moisture database.
+
+This dataset holds only location inside Switzerland, so we widened the area to all northern Europe, since the soil and weather conditions are similar to an acceptable extent to those of Switzerland.
+
+There are 217 locations, each of them equipped with at least one soil moisture volumetric sensor. Data spans between 2015 and 2022, although it varies between stations.
+
+Soil moisture sensors are layed out at different depths ranging between a few centimeters to almost 2 meters. For the sake of simplicity we narrowed down the data to the first 50 cm and calculated a mean of the different depths in the case there were several in this depth range.
+
+## Weather Data
+
+Weather data was obtained from Meteoblue API historic dataset, the same source used in production in Hydromontania project.
+
+We gathered a maximum of 3 years for each of the 217 locations.
+
+This weather data was used to estimate evapotranspiration with the same variables and algorithm than for the projct in production.
+
+All this weather data, together with the ground-truth data is stored at the database in case it is needed for future use.
+
+
+```{r}
+# load libraries
+
+library(here)
+library(stringr)
+library(ggplot2)
+library(zoo)
+library(purrr)
+library(dplyr)
+library(tidyr)
+library(readr)
+library(magrittr)
+library(lubridate)
+library(sf)
+# library(GA)
+# library(parallel)
+library(yardstick)
+library(tmap)
+library(pracma)
+library(trelliscopejs)
+library(plotly)
+
+# Source Modules & Helpers
+source(here("scripts","helper_swb.R"), local = FALSE)
+source(here("scripts","db_interface.R"), local = FALSE)
+```
+
+
+```{r}
+# connect to db to get data
+con <- make_db_conn()
+
+
+
+locations_tbl <- dplyr::tbl(con, dbplyr::in_schema("hydromontania", "calibration_locs_F")) %>%
+  filter(between(loc_id, 200, 420)) %>% 
+  collect()
+locations <- locations_tbl %>%
+  st_as_sf(coords = c("loc_lon", "loc_lat"), crs = 4326) #%>%
+
+
+
+sm_vol <- dplyr::tbl(con, dbplyr::in_schema("hydromontania", "calibration_data_X")) %>% 
+  dplyr::filter(loc_id %in% 200:420) %>% 
+  dplyr::collect()  
+
+sm_vol_filt <- sm_vol %>% 
+  filter(between(value, 0.001, .999)) %>%
+  select(loc_id, date, sm_vol = value, depth) %>% 
+  mutate(date = as_date(date))
+
+
+```
+
+
+
+```{r}
+sm_vol_filt %>% 
+  ggplot(aes(depth)) + 
+  geom_histogram()
+
+sm_vol_filt <- sm_vol_filt %>% 
+  filter(between(depth, 0, 50)) %>% 
+  group_by(loc_id, date) %>% 
+  summarise(sm_mean = mean(sm_vol))
+
+sm_vol_filt <- sm_vol_filt %>%
+  group_by(loc_id) %>%
+  complete(date = seq(min(date), max(date), by = "day")) %>%
+  ungroup() %>% 
+  mutate(
+    sm_mean  = na.approx(sm_mean, maxgap = 3, na.rm = F)
+  ) %>% 
+  drop_na(sm_mean)
+
+
+
+```
+
+
+```{r}
+# Prepare weather data to run SWB model
+
+vars <- c(11, 19)
+
+locs_vol <- sm_vol_filt$loc_id %>% unique()
+
+
+X1 <- dplyr::tbl(con, dbplyr::in_schema("hydromontania", "calibration_weather_X")) %>% 
+  dplyr::filter(loc_id %in% locs_vol) %>% 
+  dplyr::filter(var_id %in% vars) %>% 
+  dplyr::collect()
+
+variable <- GET_variables()
+
+a <- X1 %>% 
+  dplyr::group_by(loc_id) %>%
+  dplyr::mutate(l_days = as.integer(difftime(max(date), min(date), units = "days")) + 1) %>% 
+  ungroup() %>% 
+  dplyr::group_by(loc_id, var_id, l_days) %>%
+  dplyr::summarise(n = n(),
+                   .groups = "drop") %>% 
+  dplyr::mutate(is_complete = as.integer(n == l_days)) %>%
+  dplyr::group_by(loc_id) %>%
+  dplyr::summarise(is_complete = sum(is_complete) == length(vars)) %>%
+  dplyr::filter(is_complete)# %>%
+
+X <- X1 %>% 
+  dplyr::group_by(loc_id) %>%
+  dplyr::left_join(variable, by = dplyr::join_by(var_id)) %>%
+  dplyr::select(loc_id, var_short, date, value) %>%
+  tidyr::pivot_wider(names_from = "var_short", values_from = "value") %>%
+  dplyr::arrange(date, .by_group = TRUE) %>%
+  dplyr::ungroup() 
+
+
+```
+
+## Soil Water Balance Model Runs
+
+We configured the SWB model to run simulations for each location, using a grid of 20 distinct soil parameter combinations. These parameter sets represent different values of field capacities and wilting points. This grid search approach allowed us to capture a range of soil moisture behaviors and enabled initial testing of which parameter sets best matched the field data.
+
+SWB model returns several variables, the most important being the amount of water available in the soil expressed in milimiters (AVAIL). To make the analysis simpler and more clear we calculated a new variable based on AVAIL, which si simply the ratio of AVAIL and the total water holding capacity assigned for the soil. This variable is called hydro_state and ranges between 0 (totally dry) and 1 (totally wet).
+
+```{r eval=FALSE, include=FALSE}
+soil_params_grid <- expand.grid(
+  CN = c(65),
+  DC = c(0.55),
+  MUF = c(0.1),
+  WATfc = seq(20, 120, by  = 25 ),
+  WATwp_perc = c(0.05, 0.2, 0.35, 0.5)
+) %>%
+  mutate(WATwp = WATfc * WATwp_perc,
+    soil_params_id = row_number()
+  )
+
+swb_grid <- X %>% 
+  dplyr::cross_join(soil_params_grid) %>% 
+  dplyr::group_by(loc_id, soil_params_id) %>%
+  dplyr::group_modify(.f = RUN_swb_calc) %>%
+  dplyr::ungroup()
+
+
+
+swb_grid <- swb_grid %>% 
+  left_join(sm_vol_filt)
+swb_results <- swb_grid %>% 
+  group_by(loc_id, soil_params_id) %>% 
+  mutate(nday = row_number()) %>% 
+  mutate(sm = rollmean(sm_mean, k = 5, fill = NA, align = "center")) %>% 
+  filter(nday > 20) %>% 
+  drop_na()
+
+# safe_run_all_metrics <- purrr::safely(run_all_metrics)
+
+swb_results_metrics <- swb_results %>% 
+  group_nest(loc_id, soil_params_id) %>% 
+  mutate(metrics = purrr::map(data, \(x) run_all_metrics(x, "hydro_state", "sm_mean")))
+
+swb_results_metrics <- swb_results_metrics %>% 
+  dplyr::select(-data) %>%
+  unnest_wider(metrics) %>%
+  pivot_longer(cols = pearson:lm_mape, names_to = "metric", values_to = "value")
+
+swb_grid %>% write_rds(here("data", "swb_calibration", "swb_calibr_params_grid_vol_ismn.rds"))
+soil_params_grid %>% write_rds(here("data", "swb_calibration", "soil_params_grid_ismn.rds"))
+swb_results_metrics %>% write_rds(here("data", "swb_calibration", "swb_calibr_metrics_ismn.rds"))
+```
+
+We calculated several metrics for each combination of location (loc_id) and sets of soil parameters (soil_params_id) and used all of these to define which of the parameters sets was associated with a better fit between the model's hydro_state and ground-truth data.
+
+The following plots show the distribution of the metrics obtained for the 217 analyzed locations. This first analysis shows promising values of performance (error) considering the data we are dealing with and the previous analysis results.
+
+```{r echo=FALSE, fig.height=20, fig.width=10}
+swb_grid <- read_rds(here("data", "swb_calibration", "swb_calibr_params_grid_vol_ismn.rds"))
+soil_params_grid <- read_rds(here("data", "swb_calibration", "soil_params_grid_ismn.rds"))
+swb_results_metrics <- read_rds(here("data", "swb_calibration", "swb_calibr_metrics_ismn.rds"))
+
+ranked_metrics <- swb_results_metrics %>%
+  group_by(loc_id, metric) %>%
+  mutate(rank = if_else(metric %in% c("pearson", "pearson_diff", "spearman", "lm_rsquared"),
+                        dense_rank(desc(value)),  # Higher is better
+                        dense_rank(value))) %>%  # Lower is better
+  ungroup()
+
+# top_ranked <- ranked_metrics %>%
+#   filter(rank == 1) %>%
+#   group_by(loc_id, soil_params_id) %>%
+#   summarise(n_top_metrics = n(), .groups = "drop") %>%
+#   arrange(loc_id, desc(n_top_metrics))
+# 
+# best_params <- top_ranked %>%
+#   group_by(loc_id) %>%
+#   slice_max(n_top_metrics, with_ties = FALSE)
+
+best_params_avg <- ranked_metrics %>%
+  group_by(loc_id, soil_params_id) %>%
+  summarise(avg_rank = mean(rank), .groups = "drop") %>%
+  arrange(loc_id, avg_rank) %>%
+  group_by(loc_id) %>%
+  slice_min(avg_rank, with_ties = FALSE)
+
+best_params_avg <- swb_results_metrics %>%
+  inner_join(best_params_avg, by = c("loc_id", "soil_params_id"))
+
+best_params_avg %>% 
+  ggplot(aes(value)) + 
+  geom_density() + 
+  facet_wrap(~ metric, ncol = 1, scales = "free") + 
+  theme_minimal()
+
+best_params_avg %>% write_rds(here("data", "swb_calibration", "best_params_ismn.rds"))
+```
+
+Next follows a visualization of the distribution of the best parameters for the different locations.
+
+Wilting point is expressed in two different ways, as an absolute quantity (mm), and in relation the field capacity (percentage).
+
+```{r}
+best_params_filt <- best_params_avg %>% 
+  filter(metric == "pearson_diff", value > 0.25)
+best_params_filt <- best_params_filt %>% 
+  left_join(soil_params_grid, by= "soil_params_id") %>% 
+  rename(pearson_diff = value)
+
+
+best_params_filt %>% 
+  ggplot(aes(WATfc)) + 
+  geom_histogram() +
+  theme_minimal()
+
+best_params_filt %>% 
+  ggplot(aes(WATwp)) + 
+  geom_histogram() +
+  theme_minimal()
+
+best_params_filt %>% 
+  ggplot(aes(WATwp_perc)) + 
+  geom_histogram() +
+  theme_minimal()
+
+
+
+best_params_filt %>% 
+  ggplot(aes(WATfc, WATwp_perc, size = pearson_diff, color = pearson_diff)) + 
+  geom_jitter(height = .02) +
+  # geom_point() +
+  scale_color_viridis_c() + 
+  theme_minimal()
+```
+
+Finally for this first report version, follows a simple dashboard to verify visually and individually by location the matching of the modeled hydro_state (blue) for the best set of parameters with the ground-truth (red).
+
+In the bottom-right corner there is a button to expand the dashboard to improve readability. 
+The sidebar allows to resize the plots grid size and to filter the locations shown by performance metrics.
+
+```{r echo=FALSE, fig.width=30, fig.height=30, out.width="100%"}
+
+
+
+swb_best <- swb_grid %>%
+  inner_join(best_params_avg %>% distinct(loc_id, soil_params_id))
+# 
+# swb_metrics_cog <- best_params_avg %>%
+#   filter(metric %in% c("pearson", "lm_rsquared", "lm_mape")) %>%
+#   pivot_wider(names_from = metric, values_from = value) %>%
+#   distinct(loc_id, .keep_all = TRUE) 
+# # Merge Cognostics with Main Data
+# swb_best <- swb_best %>%
+#   left_join(swb_metrics_cog, by = "loc_id")
+# 
+# plotly_plot <- plot_ly(data = swb_best) %>%
+#   add_lines(x = ~date, y = ~sm_mean, name = "Soil Moisture", yaxis = "y1", line = list(color = "#cc0000")) %>%
+#   add_lines(x = ~date, y = ~hydro_state, name = "Hydro State", yaxis = "y2", line = list(color = "#0868ac")) %>%
+#   layout(
+#     title = "Soil Moisture vs. Hydro State (loc_id = 201)",
+#     xaxis = list(title = "Date"),
+#     yaxis = list(title = "Soil Moisture", side = "left", showgrid = FALSE),
+#     yaxis2 = list(
+#       title = "Hydro State",
+#       side = "right",
+#       overlaying = "y",
+#       showgrid = FALSE
+#     ),
+#     legend = list(x = 0.1, y = 0.9)
+#   )
+# plotly_plot
+
+# Function to create an interactive plot for each loc_id
+loc_plot <- function(data) {
+  plot_ly(data = data) %>%
+    add_lines(x = ~date, y = ~sm_mean, name = "Soil Moisture", yaxis = "y1", line = list(color = "#cc0000")) %>%
+    add_lines(x = ~date, y = ~hydro_state, name = "Hydro State", yaxis = "y2", line = list(color = "#0868ac")) %>%
+    layout(
+      # title = paste("Location:", unique(data$loc_id)),
+      titlefont = list(size = 10),  # Reduce title font size
+      xaxis = list(
+        title = "Date", titlefont = list(size = 9), 
+        tickfont = list(size = 8)
+      ),
+      yaxis = list(
+        title = "Soil Moisture", titlefont = list(size = 9), 
+        tickfont = list(size = 8), side = "left"
+      ),
+      yaxis2 = list(
+        title = "Hydro State", titlefont = list(size = 9), 
+        tickfont = list(size = 8), side = "right",
+        overlaying = "y"
+      ),
+      legend = list(orientation = "h", x = -0.1, y = -0.2),  # Hide legend
+      showlegend = FALSE
+    )
+}
+
+# Compute cognostics (Pearson, R², MAPE)
+swb_best_facet <- swb_best %>%
+  group_nest(loc_id, keep = TRUE) %>%
+  left_join(
+    best_params_avg %>%
+      filter(metric %in% c("pearson", "pearson_diff", "lm_rsquared", "lm_mape")) %>%
+      pivot_wider(names_from = metric, values_from = value),
+    by = "loc_id"
+  ) %>%
+  mutate(
+    panel = map_plot(data, loc_plot),  # Create plot panels
+    pearson = cog(pearson, desc = "Pearson correlation"),
+    pearson_diff = cog(pearson_diff, desc = "Pearson correlation on first differences"),
+    r_squared = cog(lm_rsquared, desc = "R-squared of linear model"),
+    mape = cog(lm_mape, desc = "Mean Absolute Percentage Error")
+  )
+
+unlink("trelliscope_output", recursive = TRUE)
+dir.create("trelliscope_output", showWarnings = FALSE)
+
+swb_best_facet %>%
+  # filter(loc_id < 230) %>% 
+  trelliscope(
+    name = "Soil Moisture vs. SWB Hydro State",
+    nrow = 3, ncol = 4,
+    # state = list(labels = c("loc_id")),
+    path = "trelliscope_output"  # Ensure this directory exists
+  )
+```
+
