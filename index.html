@@ -265,6 +265,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="soil-water-balance-model-runs">Soil Water Balance Model Runs</h2>
 <p>We configured the SWB model to run simulations for each location, using a grid of 20 distinct soil parameter combinations. These parameter sets represent different values of field capacities and wilting points. This grid search approach allowed us to capture a range of soil moisture behaviors and enabled initial testing of which parameter sets best matched the field data.</p>
 <p>SWB model returns several variables, the most important being the amount of water available in the soil expressed in milimiters (AVAIL). To make the analysis simpler and more clear we calculated a new variable based on AVAIL, which si simply the ratio of AVAIL and the total water holding capacity assigned for the soil. This variable is called hydro_state and ranges between 0 (totally dry) and 1 (totally wet).</p>
+</section>
+<section id="model-fitness-analysis" class="level2">
+<h2 class="anchored" data-anchor-id="model-fitness-analysis">Model fitness analysis</h2>
 <p>We calculated several metrics for each combination of location (loc_id) and sets of soil parameters (soil_params_id) and used all of these to define which of the parameters sets was associated with a better fit between the model’s hydro_state and ground-truth data.</p>
 <p>The following plots show the distribution of the metrics obtained for the 217 analyzed locations. This first analysis shows promising values of performance (error) considering the data we are dealing with and the previous analysis results.</p>
 <div class="cell">
@@ -349,8 +352,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>In the bottom-right corner there is a button to expand the dashboard to improve readability. The sidebar allows to resize the plots grid size and to filter the locations shown by performance metrics.</p>
 <div class="cell">
 <div class="cell-output-display">
-<div class="trelliscopejs_widget html-widget html-fill-item" id="htmlwidget-1f915961192729506db9" style="width:900px;height:550px;"></div>
-<script type="application/json" data-for="htmlwidget-1f915961192729506db9">{"x":{"id":"0652f36d","config_info":"'trelliscope_output/appfiles/config.jsonp'","self_contained":false,"latest_display":{"name":"Soil_Moisture_vs__SWB_Hydro_State","group":"common"},"spa":false,"in_knitr":true,"in_shiny":false,"in_notebook":false},"evals":[],"jsHooks":[]}</script>
+<div class="trelliscopejs_widget html-widget html-fill-item" id="htmlwidget-efb6f5bf7874b356f03e" style="width:900px;height:550px;"></div>
+<script type="application/json" data-for="htmlwidget-efb6f5bf7874b356f03e">{"x":{"id":"a803a224","config_info":"'trelliscope_output/appfiles/config.jsonp'","self_contained":false,"latest_display":{"name":"Soil_Moisture_vs__SWB_Hydro_State","group":"common"},"spa":false,"in_knitr":true,"in_shiny":false,"in_notebook":false},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 </section>

@@ -221,6 +221,8 @@ soil_params_grid %>% write_rds(here("data", "swb_calibration", "soil_params_grid
 swb_results_metrics %>% write_rds(here("data", "swb_calibration", "swb_calibr_metrics_ismn.rds"))
 ```
 
+## Model fitness analysis
+
 We calculated several metrics for each combination of location (loc_id) and sets of soil parameters (soil_params_id) and used all of these to define which of the parameters sets was associated with a better fit between the model's hydro_state and ground-truth data.
 
 The following plots show the distribution of the metrics obtained for the 217 analyzed locations. This first analysis shows promising values of performance (error) considering the data we are dealing with and the previous analysis results.
