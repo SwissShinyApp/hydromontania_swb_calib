@@ -102,7 +102,7 @@ ggplot_chart <- swb_best %>%
   theme_minimal() +
   labs(title = "Soil Moisture vs. Hydro State", x = "Date", y = "Value", color = "Legend") +
   facet_trelliscope(~loc_id, name = "Soil Moisture vs. Hydro State", nrow = 5, ncol = 8,
-                    state = list(labels = c("loc_id")),
+                    # state = list(labels = c("loc_id")),
                     path = "trelliscope_output")
 
 ggplot_chart

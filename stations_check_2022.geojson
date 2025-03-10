@@ -1,0 +1,20 @@
+{
+"type": "FeatureCollection",
+"name": "stations_check_2022",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "loc_id": 202, "loc_name": "AliceHolt", "loc_dataset": "COSMOS-UK", "use": null, "soil_type": null, "soil_descr": null, "topography": null }, "geometry": { "type": "Point", "coordinates": [ -0.85823, 51.15355 ] } },
+{ "type": "Feature", "properties": { "loc_id": 203, "loc_name": "BunnyPark", "loc_dataset": "COSMOS-UK", "use": null, "soil_type": null, "soil_descr": null, "topography": null }, "geometry": { "type": "Point", "coordinates": [ -1.12685, 52.86073 ] } },
+{ "type": "Feature", "properties": { "loc_id": 204, "loc_name": "Cardington", "loc_dataset": "COSMOS-UK", "use": null, "soil_type": null, "soil_descr": null, "topography": null }, "geometry": { "type": "Point", "coordinates": [ -0.42464, 52.1056 ] } },
+{ "type": "Feature", "properties": { "loc_id": 206, "loc_name": "ChobhamCommon", "loc_dataset": "COSMOS-UK", "use": null, "soil_type": null, "soil_descr": null, "topography": null }, "geometry": { "type": "Point", "coordinates": [ -0.59748, 51.36795 ] } },
+{ "type": "Feature", "properties": { "loc_id": 207, "loc_name": "Elmsett", "loc_dataset": "COSMOS-UK", "use": null, "soil_type": null, "soil_descr": null, "topography": null }, "geometry": { "type": "Point", "coordinates": [ 0.99307, 52.09465 ] } },
+{ "type": "Feature", "properties": { "loc_id": 208, "loc_name": "Euston", "loc_dataset": "COSMOS-UK", "use": null, "soil_type": null, "soil_descr": null, "topography": null }, "geometry": { "type": "Point", "coordinates": [ 0.79592, 52.33639 ] } },
+{ "type": "Feature", "properties": { "loc_id": 209, "loc_name": "Fincham", "loc_dataset": "COSMOS-UK", "use": null, "soil_type": null, "soil_descr": null, "topography": null }, "geometry": { "type": "Point", "coordinates": [ 0.51073, 52.61777 ] } },
+{ "type": "Feature", "properties": { "loc_id": 210, "loc_name": "Hadlow", "loc_dataset": "COSMOS-UK", "use": null, "soil_type": null, "soil_descr": null, "topography": null }, "geometry": { "type": "Point", "coordinates": [ 0.32018, 51.22856 ] } },
+{ "type": "Feature", "properties": { "loc_id": 212, "loc_name": "LullingtonHeath", "loc_dataset": "COSMOS-UK", "use": null, "soil_type": null, "soil_descr": null, "topography": null }, "geometry": { "type": "Point", "coordinates": [ 0.18887, 50.79372 ] } },
+{ "type": "Feature", "properties": { "loc_id": 214, "loc_name": "Morley", "loc_dataset": "COSMOS-UK", "use": null, "soil_type": null, "soil_descr": null, "topography": null }, "geometry": { "type": "Point", "coordinates": [ 1.03423, 52.54815 ] } },
+{ "type": "Feature", "properties": { "loc_id": 218, "loc_name": "Riseholme", "loc_dataset": "COSMOS-UK", "use": null, "soil_type": null, "soil_descr": null, "topography": null }, "geometry": { "type": "Point", "coordinates": [ -0.52591, 53.26165 ] } },
+{ "type": "Feature", "properties": { "loc_id": 222, "loc_name": "Stoughton", "loc_dataset": "COSMOS-UK", "use": null, "soil_type": null, "soil_descr": null, "topography": null }, "geometry": { "type": "Point", "coordinates": [ -1.04701, 52.60164 ] } },
+{ "type": "Feature", "properties": { "loc_id": 225, "loc_name": "Writtle", "loc_dataset": "COSMOS-UK", "use": null, "soil_type": null, "soil_descr": null, "topography": null }, "geometry": { "type": "Point", "coordinates": [ 0.4179, 51.734 ] } }
+]
+}

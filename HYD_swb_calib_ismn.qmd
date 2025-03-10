@@ -201,7 +201,8 @@ swb_grid <- swb_grid %>%
 swb_results <- swb_grid %>% 
   group_by(loc_id, soil_params_id) %>% 
   mutate(nday = row_number()) %>% 
-  mutate(sm = rollmean(sm_mean, k = 5, fill = NA, align = "center")) %>% 
+  mutate(sm_mean = rollmean(sm_mean, k = 5, fill = NA, align = "center")) %>% 
+  mutate(hydro_state = rollmean(hydro_state, k = 5, fill = NA, align = "center")) %>% 
   filter(nday > 20) %>% 
   drop_na()
 
@@ -218,7 +219,7 @@ swb_results_metrics <- swb_results_metrics %>%
 
 swb_grid %>% write_rds(here("data", "swb_calibration", "swb_calibr_params_grid_vol_ismn.rds"))
 soil_params_grid %>% write_rds(here("data", "swb_calibration", "soil_params_grid_ismn.rds"))
-swb_results_metrics %>% write_rds(here("data", "swb_calibration", "swb_calibr_metrics_ismn.rds"))
+swb_results_metrics %>% write_rds(here("data", "swb_calibration", "swb_calibr_metrics_ismn_250304.rds"))
 ```
 
 ## Model fitness analysis
@@ -368,9 +369,12 @@ loc_plot <- function(data) {
     )
 }
 
+
+
 # Compute cognostics (Pearson, R², MAPE)
 swb_best_facet <- swb_best %>%
   group_nest(loc_id, keep = TRUE) %>%
+  filter(loc_id %in% period_comparison$loc_id) %>% 
   left_join(
     best_params_avg %>%
       filter(metric %in% c("pearson", "pearson_diff", "lm_rsquared", "lm_mape")) %>%
@@ -396,5 +400,56 @@ swb_best_facet %>%
     # state = list(labels = c("loc_id")),
     path = "trelliscope_output"  # Ensure this directory exists
   )
+```
+
+
+```{r}
+# Select locations that have a mismatch during 2022
+
+loc_id_duration_filter <- swb_best %>%
+  drop_na(sm_mean) %>% 
+  count(loc_id) %>% 
+  filter(n > 365) %>% 
+  pull(loc_id)
+
+period_comparison <- swb_best %>% 
+  mutate(
+    season = case_when(
+      date >= ymd("2020-09-01") & date < ymd("2021-08-01") ~ "20-21",
+      date >= ymd("2021-09-01") & date < ymd("2022-08-01") ~ "21-22",
+      TRUE ~ NA
+    )
+  ) %>% 
+  drop_na() %>% 
+  group_by(loc_id) %>% 
+  mutate(n = n()) %>% 
+  ungroup() %>% 
+  filter(n == 668) %>% 
+  group_by(loc_id, season) %>% 
+  mutate(
+    sm_mean = rollmean(sm_mean, k = 5, fill = NA, align = "center"),
+    hydro_state = rollmean(hydro_state, k = 5, fill = NA, align = "center"),
+    diff = (hydro_state - sm_mean)) %>% 
+  drop_na() %>% 
+  summarise(diff = mean(diff)) %>% 
+  ungroup()
+
+period_comparison  %>% 
+  pivot_wider(names_from = "season", values_from = "diff") %>% 
+  ggplot(aes(`21-22`, `20-21`)) + 
+  geom_point() 
+
+
+loc_id_filt <- c(202, 203, 204, 206, 207, 208, 209, 210, 212,
+  214, 218, 222, 225)
+locations_tbl_filt <- locations_tbl %>% 
+  filter(loc_id %in% loc_id_filt) %>% 
+  select(loc_id:loc_dataset) %>% 
+  write_excel_csv("stations_check_2022.csv")
+locations_filt <- locations %>% 
+  filter(loc_id %in% loc_id_filt) %>% 
+  st_write("stations_check_2022.geojson")
+tm_shape(locations_filt) %>% 
+  tm_markers()
 ```
 
