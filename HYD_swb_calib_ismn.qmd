@@ -66,8 +66,6 @@ library(readr)
 library(magrittr)
 library(lubridate)
 library(sf)
-# library(GA)
-# library(parallel)
 library(yardstick)
 library(tmap)
 library(pracma)
@@ -127,8 +125,12 @@ sm_vol_filt <- sm_vol_filt %>%
   ) %>% 
   drop_na(sm_mean)
 
+loc_id_count <- sm_vol_filt %>% 
+  count(loc_id) %>% 
+  filter(n > 300)
 
-
+sm_vol_filt <- sm_vol_filt %>% 
+  filter(loc_id %in% loc_id_count$loc_id)
 ```
 
 
@@ -176,17 +178,27 @@ We configured the SWB model to run simulations for each location, using a grid o
 
 SWB model returns several variables, the most important being the amount of water available in the soil expressed in milimiters (AVAIL). To make the analysis simpler and more clear we calculated a new variable based on AVAIL, which si simply the ratio of AVAIL and the total water holding capacity assigned for the soil. This variable is called hydro_state and ranges between 0 (totally dry) and 1 (totally wet).
 
+UPDATE
+
+Removed from analysis locations with less than 300 soil moisture daily readings.
+
+Changed the field capacity and wilting point levels in the grid to explore a wider range where the previous analysis results showed high occurrence of best parameters in one of the extremes.
+
+Smoothed the hydrostate and soil moisture curves before calculating error metrics. This allows to remove noise in the daily time frame and capturing similarities of the tow curves on significant trends.
+
 ```{r eval=FALSE, include=FALSE}
 soil_params_grid <- expand.grid(
   CN = c(65),
   DC = c(0.55),
   MUF = c(0.1),
-  WATfc = seq(20, 120, by  = 25 ),
-  WATwp_perc = c(0.05, 0.2, 0.35, 0.5)
+  WATfc = seq(50, 500, by  = 50),
+  WATwp_perc = c(0.05, 0.15, 0.25)
 ) %>%
   mutate(WATwp = WATfc * WATwp_perc,
     soil_params_id = row_number()
   )
+
+
 
 swb_grid <- X %>% 
   dplyr::cross_join(soil_params_grid) %>% 
@@ -195,14 +207,18 @@ swb_grid <- X %>%
   dplyr::ungroup()
 
 
-
 swb_grid <- swb_grid %>% 
+  filter(loc_id %in% loc_id_count$loc_id) %>% 
   left_join(sm_vol_filt)
+
+
 swb_results <- swb_grid %>% 
   group_by(loc_id, soil_params_id) %>% 
   mutate(nday = row_number()) %>% 
-  mutate(sm_mean = rollmean(sm_mean, k = 5, fill = NA, align = "center")) %>% 
-  mutate(hydro_state = rollmean(hydro_state, k = 5, fill = NA, align = "center")) %>% 
+  mutate(
+    sm_mean = predict(loess(sm_mean ~ as.numeric(date), span = 0.05, data = cur_data(), na.action = na.exclude)),
+    hydro_state = predict(loess(hydro_state ~ as.numeric(date), span = 0.05, data = cur_data(), na.action = na.exclude))
+  ) %>% 
   filter(nday > 20) %>% 
   drop_na()
 
@@ -217,9 +233,9 @@ swb_results_metrics <- swb_results_metrics %>%
   unnest_wider(metrics) %>%
   pivot_longer(cols = pearson:lm_mape, names_to = "metric", values_to = "value")
 
-swb_grid %>% write_rds(here("data", "swb_calibration", "swb_calibr_params_grid_vol_ismn.rds"))
-soil_params_grid %>% write_rds(here("data", "swb_calibration", "soil_params_grid_ismn.rds"))
-swb_results_metrics %>% write_rds(here("data", "swb_calibration", "swb_calibr_metrics_ismn_250304.rds"))
+swb_grid %>% write_rds(here("data", "swb_calibration", "swb_calibr_params_grid_vol_ismn_250310.rds"))
+soil_params_grid %>% write_rds(here("data", "swb_calibration", "soil_params_grid_ismn_250310.rds"))
+swb_results_metrics %>% write_rds(here("data", "swb_calibration", "swb_calibr_metrics_ismn_250310.rds"))
 ```
 
 ## Model fitness analysis
@@ -229,9 +245,9 @@ We calculated several metrics for each combination of location (loc_id) and sets
 The following plots show the distribution of the metrics obtained for the 217 analyzed locations. This first analysis shows promising values of performance (error) considering the data we are dealing with and the previous analysis results.
 
 ```{r echo=FALSE, fig.height=20, fig.width=10}
-swb_grid <- read_rds(here("data", "swb_calibration", "swb_calibr_params_grid_vol_ismn.rds"))
-soil_params_grid <- read_rds(here("data", "swb_calibration", "soil_params_grid_ismn.rds"))
-swb_results_metrics <- read_rds(here("data", "swb_calibration", "swb_calibr_metrics_ismn.rds"))
+swb_grid <- read_rds(here("data", "swb_calibration", "swb_calibr_params_grid_vol_ismn_250310.rds"))
+soil_params_grid <- read_rds(here("data", "swb_calibration", "soil_params_grid_ismn_250310.rds"))
+swb_results_metrics <- read_rds(here("data", "swb_calibration", "swb_calibr_metrics_ismn_250310.rds"))
 
 ranked_metrics <- swb_results_metrics %>%
   group_by(loc_id, metric) %>%
@@ -239,16 +255,6 @@ ranked_metrics <- swb_results_metrics %>%
                         dense_rank(desc(value)),  # Higher is better
                         dense_rank(value))) %>%  # Lower is better
   ungroup()
-
-# top_ranked <- ranked_metrics %>%
-#   filter(rank == 1) %>%
-#   group_by(loc_id, soil_params_id) %>%
-#   summarise(n_top_metrics = n(), .groups = "drop") %>%
-#   arrange(loc_id, desc(n_top_metrics))
-# 
-# best_params <- top_ranked %>%
-#   group_by(loc_id) %>%
-#   slice_max(n_top_metrics, with_ties = FALSE)
 
 best_params_avg <- ranked_metrics %>%
   group_by(loc_id, soil_params_id) %>%
@@ -316,32 +322,17 @@ The sidebar allows to resize the plots grid size and to filter the locations sho
 
 
 swb_best <- swb_grid %>%
-  inner_join(best_params_avg %>% distinct(loc_id, soil_params_id))
+  group_by(loc_id, soil_params_id) %>% 
+  mutate(nday = row_number()) %>% 
+  # mutate(sm_mean = rollmean(sm_mean, k = 5, fill = NA, align = "center")) %>% 
+  # mutate(hydro_state = rollmean(hydro_state, k = 5, fill = NA, align = "center")) %>% 
+  mutate(
+    sm_mean = predict(loess(sm_mean ~ as.numeric(date), span = 0.05, data = cur_data(), na.action = na.exclude)),
+    hydro_state = predict(loess(hydro_state ~ as.numeric(date), span = 0.05, data = cur_data(), na.action = na.exclude))
+  ) %>% 
+  filter(nday > 20) %>% 
+  inner_join(best_params_avg %>% distinct(loc_id, soil_params_id)) 
 # 
-# swb_metrics_cog <- best_params_avg %>%
-#   filter(metric %in% c("pearson", "lm_rsquared", "lm_mape")) %>%
-#   pivot_wider(names_from = metric, values_from = value) %>%
-#   distinct(loc_id, .keep_all = TRUE) 
-# # Merge Cognostics with Main Data
-# swb_best <- swb_best %>%
-#   left_join(swb_metrics_cog, by = "loc_id")
-# 
-# plotly_plot <- plot_ly(data = swb_best) %>%
-#   add_lines(x = ~date, y = ~sm_mean, name = "Soil Moisture", yaxis = "y1", line = list(color = "#cc0000")) %>%
-#   add_lines(x = ~date, y = ~hydro_state, name = "Hydro State", yaxis = "y2", line = list(color = "#0868ac")) %>%
-#   layout(
-#     title = "Soil Moisture vs. Hydro State (loc_id = 201)",
-#     xaxis = list(title = "Date"),
-#     yaxis = list(title = "Soil Moisture", side = "left", showgrid = FALSE),
-#     yaxis2 = list(
-#       title = "Hydro State",
-#       side = "right",
-#       overlaying = "y",
-#       showgrid = FALSE
-#     ),
-#     legend = list(x = 0.1, y = 0.9)
-#   )
-# plotly_plot
 
 # Function to create an interactive plot for each loc_id
 loc_plot <- function(data) {
@@ -369,12 +360,10 @@ loc_plot <- function(data) {
     )
 }
 
-
-
 # Compute cognostics (Pearson, R², MAPE)
 swb_best_facet <- swb_best %>%
   group_nest(loc_id, keep = TRUE) %>%
-  filter(loc_id %in% period_comparison$loc_id) %>% 
+  # filter(loc_id %in% period_comparison$loc_id) %>% 
   left_join(
     best_params_avg %>%
       filter(metric %in% c("pearson", "pearson_diff", "lm_rsquared", "lm_mape")) %>%
@@ -396,14 +385,28 @@ swb_best_facet %>%
   # filter(loc_id < 230) %>% 
   trelliscope(
     name = "Soil Moisture vs. SWB Hydro State",
-    nrow = 3, ncol = 4,
+    nrow = 2, ncol = 4,
     # state = list(labels = c("loc_id")),
     path = "trelliscope_output"  # Ensure this directory exists
   )
 ```
 
+```{r eval=FALSE, include=FALSE}
+swb_best %>% 
+  filter(loc_id == 210) %>% 
+  mutate(
+    sm_mean_sm = predict(loess(sm_mean ~ as.numeric(date), span = 0.05, data = cur_data(), na.action = na.exclude)),
+    hydro_state_sm = predict(loess(hydro_state ~ as.numeric(date), span = 0.05, data = cur_data(), na.action = na.exclude))
+  ) %>% 
+  ggplot(aes(x = date)) + 
+  geom_line(aes(y = sm_mean), color = "blue") + 
+  geom_line(aes(y = sm_mean_sm), color = "red") + 
+  theme_minimal()
+```
 
-```{r}
+
+
+```{r eval=FALSE, include=FALSE}
 # Select locations that have a mismatch during 2022
 
 loc_id_duration_filter <- swb_best %>%
@@ -451,5 +454,226 @@ locations_filt <- locations %>%
   st_write("stations_check_2022.geojson")
 tm_shape(locations_filt) %>% 
   tm_markers()
+```
+A set of locations situated in United Kingdom a good fit between 2020 and 2023, but have a clear mismatch between September 2021 and July 2022. 
+
+We are going to explore these stations with weather data from nearby weather stations and from another weather model to check if this mismatch is due to the weather data we are actually using.
+
+```{r}
+uk_data <- read_rds(here("output_stations", "complete_data_set.rds"))
+
+loc_id_filt <- c(202, 203, 204, 206, 207, 208, 209, 210, 212,
+  214, 218, 222, 225)
+
+sm_vol_uk <- sm_vol_filt %>% 
+  filter(loc_id %in% loc_id_filt)
+
+et_data_uk <- X %>% 
+  filter(loc_id %in% loc_id_filt) %>% 
+  dplyr::select(-Sum.Precipitation)
+
+rain_data_uk <- uk_data %>% 
+  purrr::map(\(x) {
+    loc_id_i <- x$loc_id
+    meta_data <- x$meta_data
+    station_data <- x$station_data %>% 
+      purrr::imap(\(s, i) {
+        s_id <- names(x$station_data)[i]
+        if (is.data.frame(s)) {
+          s %>% 
+          # mutate(station_index = s_id) %>% 
+          filter(rain_station >= 0, # remove -999 tag missing data
+                 date >= ymd("2021-01-01"), date < ymd("2023-01-01")) %>%  
+          drop_na() 
+        } else {
+          return(tibble())
+        }
+      }) %>% 
+      bind_rows() %>% 
+      group_by(date) %>% 
+      summarise(Sum.Precipitation = mean(rain_station, na.rm = TRUE)) %>% 
+      mutate(source = "station")
+    mm_data <- x$model_at_sensor %>% 
+      filter(date >= ymd("2021-01-01"), date < ymd("2023-01-01")) %>% 
+      rename(Sum.Precipitation = rain_mmmix) %>% 
+      mutate(source = "mm")
+    bind_rows(station_data, mm_data) %>% 
+      mutate(loc_id = loc_id_i$loc_id)
+  }) %>% 
+  bind_rows()
+
+
+weather_data_uk <- bind_rows(
+  rain_data_uk,
+  X %>% 
+    filter(loc_id %in% loc_id_filt) %>% 
+    dplyr::select(-ET0_pm) %>% 
+    mutate(source = "meteoblue"),
+) %>% 
+  left_join(et_data_uk) %>% 
+  filter(date >= ymd("2021-01-01"), date < ymd("2023-01-01"))
+
+
+swb_uk <- weather_data_uk %>% 
+  dplyr::left_join(best_params_avg %>% distinct(loc_id, soil_params_id), by = "loc_id") %>% 
+  dplyr::left_join(soil_params_grid, by = "soil_params_id") %>% 
+  dplyr::group_by(loc_id, source) %>%
+  dplyr::group_modify(.f = RUN_swb_calc) %>%
+  dplyr::ungroup()
+
+
+swb_uk <- swb_uk %>% 
+  left_join(sm_vol_filt)
+
+swb_uk |> write_rds(here("data", "swb_calibration", "swb_analysis_uk.rds"))
+
+
+```
+
+For each of the sites we compare soil moisture readings from the ISMN station (red) against hydrostate calculated for 3 different sources of precipitation data for the same location: the model we have been using so far in the project from Meteoblue (blue), a weather model from another provider, Meteomatics, (red) and data from an average of nearby weather stations (purple). 
+
+```{r echo=FALSE, fig.width=30, fig.height=30, out.width="100%"}
+
+swb_uk <- read_rds(here("data", "swb_calibration", "swb_analysis_uk.rds"))
+
+swb_uk_sm <- swb_uk %>%
+  group_by(loc_id, source) %>% 
+  mutate(nday = row_number()) %>% 
+  # mutate(sm_mean = rollmean(sm_mean, k = 5, fill = NA, align = "center")) %>% 
+  # mutate(hydro_state = rollmean(hydro_state, k = 5, fill = NA, align = "center")) %>% 
+  mutate(
+    sm_mean = predict(loess(sm_mean ~ as.numeric(date), span = 0.05, data = cur_data(), na.action = na.exclude)),
+    hydro_state = predict(loess(hydro_state ~ as.numeric(date), span = 0.05, data = cur_data(), na.action = na.exclude))
+  ) %>% 
+  ungroup() %>% 
+  filter(nday > 20) 
+# 
+
+# Function to create an interactive plot for each loc_id
+loc_plot <- function(data) {
+  plot_ly(data = data) %>%
+    add_lines(x = ~date, y = ~sm_mean, name = "Soil Moisture", yaxis = "y1", line = list(color = "#cc0000")) %>%
+    add_lines(x = ~date, y = ~meteoblue, name = "MB", yaxis = "y2", line = list(color = "#0868ac")) %>%
+    add_lines(x = ~date, y = ~mm, name = "MM", yaxis = "y2", line = list(color = "green")) %>%
+    add_lines(x = ~date, y = ~station, name = "WS", yaxis = "y2", line = list(color = "purple")) %>%
+    layout(
+      # title = paste("Location:", unique(data$loc_id)),
+      titlefont = list(size = 10),  # Reduce title font size
+      xaxis = list(
+        title = "Date", titlefont = list(size = 9), 
+        tickfont = list(size = 8)
+      ),
+      yaxis = list(
+        title = "Soil Moisture", titlefont = list(size = 9), 
+        tickfont = list(size = 8), side = "left"
+      ),
+      yaxis2 = list(
+        title = "Hydro State", titlefont = list(size = 9), 
+        tickfont = list(size = 8), side = "right",
+        overlaying = "y"
+      ),
+      legend = list(orientation = "h", x = -0.1, y = -0.2),  # Hide legend
+      showlegend = FALSE
+    )
+}
+
+unlink("trelliscope_output_2", recursive = TRUE)
+dir.create("trelliscope_output_2", showWarnings = FALSE)
+
+swb_uk_sm %>%
+  pivot_wider(names_from = source, values_from = hydro_state) %>% 
+  group_nest(loc_id, keep = TRUE) %>%
+  mutate(
+    panel = map_plot(data, loc_plot),  # Create plot panels
+  ) %>% 
+  trelliscope(
+    name = "PP source comparison",
+    nrow = 2, ncol = 4,
+    # state = list(labels = c("loc_id")),
+    path = "trelliscope_output_2"  # Ensure this directory exists
+  )
+
+
+
+```
+
+Unfortunately, weather station data starts during the analysed period and we must consider for the SWB model to settle, so this we cannot consider it properly. However, even with these caveats we may observe a higher hydrostate for the station source (purple) matching the curve of soil moisture in almost half of the sites. Meteomatics data also show a high hydrostate curve very similar to soil moisture in more than half of the stations.
+
+We can conclude that in general that this general mismatch in the analyzed period is due to an underestimation in the precipitations in the area for the Meteoblue model and not an error induced by the SWB model. The 
+
+
+```{r}
+library(stars)
+
+# Get soil depth from soilgrids 1.0 (not available in v2.0)
+
+# sg_BDTICM <- "/vsicurl/https://files.isric.org/soilgrids/former/2017-03-10/data/BDTICM_M_250m_ll.tif" %>% 
+#   read_stars(proxy = TRUE)
+# sg_BDRICM <- "/vsicurl/https://files.isric.org/soilgrids/former/2017-03-10/data/BDRICM_M_250m_ll.tif" %>% 
+#   read_stars(proxy = TRUE)
+# 
+# 
+# # Extract pixel values at point locations
+# extracted_BDTICM <- st_extract(sg_BDTICM, pts)
+# extracted_BDRICM <- st_extract(sg_BDRICM, pts)
+
+pts <- st_transform(locations, 3035)
+
+esddd_rasters <- c(
+  "STU_EU_DEPTH_ROOTS.rst",
+  "STU_EU_T_TAWC.rst",
+  "STU_EU_S_TAWC.rst",
+  "STU_EU_T_TEXT_CLS.rst",
+  "STU_EU_S_TEXT_CLS.rst",
+  "STU_EU_T_CLAY.rst"
+)
+
+extracted_data <- esddd_rasters %>% 
+  purrr::map(\(x) {
+    r <- here("data", "soil", "STU_EU_Layers", x) %>% 
+  read_stars(proxy = TRUE) 
+    st_crs(r) <- 3035
+    extracted <- st_extract(r, pts) %>% 
+      st_drop_geometry()
+  }) %>% 
+  bind_cols()
+  
+names(extracted_data) <- c("depth_cm", "t_twac_mm", "s_twac_mm", "t_text_cls", "s_text_cls", "t_clay")
+extracted_data <- extracted_data %>% 
+  mutate(depth_cm = as.numeric(depth_cm),
+         t_clay = as.numeric(t_clay) / 100,
+         t_text_cls = factor(t_text_cls),
+         s_text_cls = factor(s_text_cls),
+         tot_twac_mm = t_twac_mm + s_twac_mm,
+         loc_id = locations$loc_id)
+  
+
+best_params_soil <- best_params_filt %>% 
+  left_join(extracted_data)
+
+best_params_soil %>% 
+  ggplot(aes(depth_cm, WATfc, color = t_text_cls)) + 
+  geom_jitter(width = 5) + 
+  geom_smooth(method = "loess", se = FALSE) + 
+  theme_minimal()
+
+best_params_soil %>% 
+  ggplot(aes(depth_cm, WATfc, color = s_text_cls)) + 
+  geom_jitter(width = 5) + 
+  geom_smooth(method = "loess", se = FALSE) + 
+  theme_minimal()
+
+best_params_soil %>% 
+  ggplot(aes(tot_twac_mm, WATfc, color = t_text_cls)) + 
+  geom_jitter(width = 5) + 
+  geom_smooth(method = "loess", se = FALSE) + 
+  theme_minimal()
+
+best_params_soil %>% 
+  ggplot(aes(tot_twac_mm, WATfc, color = s_text_cls)) + 
+  geom_jitter(width = 5) + 
+  geom_smooth(method = "loess", se = FALSE) + 
+  theme_minimal()
+
 ```
 
