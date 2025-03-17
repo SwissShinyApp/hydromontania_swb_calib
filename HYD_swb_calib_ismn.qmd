@@ -717,10 +717,6 @@ best_params_soil %>%
   )
 
 ```
-```{r}
-cor(best_params_soil$WATfc, best_params_soil$tot_twac_mm)
-cor(best_params_soil$WATfc, best_params_soil$depth_cm)
-cor(best_params_soil$WATfc, best_params_soil$t_clay)
-```
+
 
 

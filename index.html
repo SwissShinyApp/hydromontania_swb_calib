@@ -361,8 +361,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>In the bottom-right corner there is a button to expand the dashboard to improve readability. The sidebar allows to resize the plots grid size and to filter the locations shown by performance metrics.</p>
 <div class="cell">
 <div class="cell-output-display">
-<div class="trelliscopejs_widget html-widget html-fill-item" id="htmlwidget-49230dd1e3a64456a602" style="width:900px;height:550px;"></div>
-<script type="application/json" data-for="htmlwidget-49230dd1e3a64456a602">{"x":{"id":"61fd722e","config_info":"'trelliscope_output/appfiles/config.jsonp'","self_contained":false,"latest_display":{"name":"Soil_Moisture_vs__SWB_Hydro_State","group":"common"},"spa":false,"in_knitr":true,"in_shiny":false,"in_notebook":false},"evals":[],"jsHooks":[]}</script>
+<div class="trelliscopejs_widget html-widget html-fill-item" id="htmlwidget-9c2a0f5d2b329d3f9c6d" style="width:900px;height:550px;"></div>
+<script type="application/json" data-for="htmlwidget-9c2a0f5d2b329d3f9c6d">{"x":{"id":"d2956222","config_info":"'trelliscope_output/appfiles/config.jsonp'","self_contained":false,"latest_display":{"name":"Soil_Moisture_vs__SWB_Hydro_State","group":"common"},"spa":false,"in_knitr":true,"in_shiny":false,"in_notebook":false},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 </section>
@@ -444,8 +444,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>For each of the sites we compare soil moisture readings from the ISMN station (red) against hydrostate calculated for 3 different sources of precipitation data for the same location: the model we have been using so far in the project from Meteoblue (blue), a weather model from another provider, Meteomatics, (red) and data from an average of nearby weather stations (purple).</p>
 <div class="cell">
 <div class="cell-output-display">
-<div class="trelliscopejs_widget html-widget html-fill-item" id="htmlwidget-34cc28997b3673d86dda" style="width:900px;height:550px;"></div>
-<script type="application/json" data-for="htmlwidget-34cc28997b3673d86dda">{"x":{"id":"ca779354","config_info":"'trelliscope_output_2/appfiles/config.jsonp'","self_contained":false,"latest_display":{"name":"PP_source_comparison","group":"common"},"spa":false,"in_knitr":true,"in_shiny":false,"in_notebook":false},"evals":[],"jsHooks":[]}</script>
+<div class="trelliscopejs_widget html-widget html-fill-item" id="htmlwidget-2d3d4765ac46ed5b7b91" style="width:900px;height:550px;"></div>
+<script type="application/json" data-for="htmlwidget-2d3d4765ac46ed5b7b91">{"x":{"id":"c56c0b52","config_info":"'trelliscope_output_2/appfiles/config.jsonp'","self_contained":false,"latest_display":{"name":"PP_source_comparison","group":"common"},"spa":false,"in_knitr":true,"in_shiny":false,"in_notebook":false},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 <p>Unfortunately, weather station data starts during the analysed period and we must consider for the SWB model to settle, so this we cannot consider it properly. However, even with these caveats we may observe a higher hydrostate for the station source (purple) matching the curve of soil moisture in almost half of the sites. Meteomatics data also show a high hydrostate curve very similar to soil moisture in more than half of the stations.</p>
@@ -603,29 +603,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><img src="HYD_swb_calib_ismn_files/figure-html/unnamed-chunk-13-5.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
-</div>
-</div>
-<div class="cell">
-<details class="code-fold">
-<summary>Show Code</summary>
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cor</span>(best_params_soil<span class="sc">$</span>WATfc, best_params_soil<span class="sc">$</span>tot_twac_mm)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.2071488</code></pre>
-</div>
-<details class="code-fold">
-<summary>Show Code</summary>
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cor</span>(best_params_soil<span class="sc">$</span>WATfc, best_params_soil<span class="sc">$</span>depth_cm)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.05264243</code></pre>
-</div>
-<details class="code-fold">
-<summary>Show Code</summary>
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cor</span>(best_params_soil<span class="sc">$</span>WATfc, best_params_soil<span class="sc">$</span>t_clay)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.2306939</code></pre>
 </div>
 </div>
 </section>
