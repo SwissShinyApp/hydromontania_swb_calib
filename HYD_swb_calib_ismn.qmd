@@ -455,6 +455,9 @@ locations_filt <- locations %>%
 tm_shape(locations_filt) %>% 
   tm_markers()
 ```
+
+# Focused analysis on subset of stations
+
 A set of locations situated in United Kingdom a good fit between 2020 and 2023, but have a clear mismatch between September 2021 and July 2022. 
 
 We are going to explore these stations with weather data from nearby weather stations and from another weather model to check if this mismatch is due to the weather data we are actually using.
@@ -599,7 +602,13 @@ swb_uk_sm %>%
 
 Unfortunately, weather station data starts during the analysed period and we must consider for the SWB model to settle, so this we cannot consider it properly. However, even with these caveats we may observe a higher hydrostate for the station source (purple) matching the curve of soil moisture in almost half of the sites. Meteomatics data also show a high hydrostate curve very similar to soil moisture in more than half of the stations.
 
-We can conclude that in general that this general mismatch in the analyzed period is due to an underestimation in the precipitations in the area for the Meteoblue model and not an error induced by the SWB model. The 
+We can conclude that in general that this general mismatch in the analyzed period is due to an underestimation in the precipitations in the area for the Meteoblue model and not an error induced by the SWB model. 
+
+## SWB parameters explainability
+
+As an ultimate goal we need to either define a set of SWB parameters as constant of define a function or model to estimate them based on the location conditions.
+
+In that sense we are going to extract a set of soil properties from the European Soil Database for each location and perform an exploration of the relation between those and the best SWB parameters estimated per site.
 
 
 ```{r}
@@ -655,25 +664,63 @@ best_params_soil %>%
   ggplot(aes(depth_cm, WATfc, color = t_text_cls)) + 
   geom_jitter(width = 5) + 
   geom_smooth(method = "loess", se = FALSE) + 
-  theme_minimal()
+  theme_minimal() + 
+  labs(
+    title = "Soil depth vs optimized WATfc",
+    x = "Soil Depth (cm)",
+    color = "Top soil texture class"
+  )
 
 best_params_soil %>% 
   ggplot(aes(depth_cm, WATfc, color = s_text_cls)) + 
   geom_jitter(width = 5) + 
   geom_smooth(method = "loess", se = FALSE) + 
-  theme_minimal()
+  theme_minimal() + 
+  labs(
+    title = "Soil depth vs optimized WATfc",
+    x = "Soil Depth (cm)",
+    color = "Sub soil texture class"
+  )
 
 best_params_soil %>% 
   ggplot(aes(tot_twac_mm, WATfc, color = t_text_cls)) + 
   geom_jitter(width = 5) + 
   geom_smooth(method = "loess", se = FALSE) + 
-  theme_minimal()
+  theme_minimal() + 
+  labs(
+    title = "Soil total water content vs optimized WATfc",
+    x = "Soil Total Available Water Content (mm)",
+    color = "Top soil texture class"
+  )
 
 best_params_soil %>% 
   ggplot(aes(tot_twac_mm, WATfc, color = s_text_cls)) + 
   geom_jitter(width = 5) + 
   geom_smooth(method = "loess", se = FALSE) + 
-  theme_minimal()
+  theme_minimal() + 
+  labs(
+    title = "Soil total water content vs optimized WATfc",
+    x = "Soil Total Available Water Content (mm)",
+    color = "Sub soil texture class"
+  )
+
+best_params_soil %>% 
+  mutate(tot_twac_class = cut(tot_twac_mm, breaks = c(0, 100, 250))) |>
+  ggplot(aes(t_clay, WATfc, color = tot_twac_class)) + 
+  geom_jitter(width = 0.05) + 
+  geom_smooth(method = "loess", se = FALSE) + 
+  theme_minimal() + 
+  labs(
+    title = "Soil clay content vs optimized WATfc",
+    x = "Top soil clay content",
+    color = "Soil TWAC (mm)"
+  )
 
 ```
+```{r}
+cor(best_params_soil$WATfc, best_params_soil$tot_twac_mm)
+cor(best_params_soil$WATfc, best_params_soil$depth_cm)
+cor(best_params_soil$WATfc, best_params_soil$t_clay)
+```
+
 
